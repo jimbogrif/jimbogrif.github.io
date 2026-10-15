@@ -2,7 +2,7 @@
 title: "About Me"
 about:
   template: jolla
-  image: headshot.jpg
+  image: assets/headshot.jpg
   image-shape: round
   links:
     - icon: github
@@ -16,7 +16,7 @@ about:
       href: "https://scholar.google.com/citations?user=z8KVusIAAAAJ"
     - icon: file-earmark-pdf
       text: Resume
-      href: resume.pdf
+      href: assets/resume.pdf
       
 ---
 

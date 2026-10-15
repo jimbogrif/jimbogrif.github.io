@@ -1,7 +1,7 @@
 project:
   type: website
   resources:
-    - resume.pdf
+    - assets/resume.pdf
 
 website:
   description: "Jim's blog about bioinformatics, machine learning, and AI in biology"
