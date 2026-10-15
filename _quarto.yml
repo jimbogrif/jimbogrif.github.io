@@ -1,0 +1,22 @@
+project:
+  type: website
+  resources:
+    - resume.pdf
+
+website:
+  description: "Jim's blog about bioinformatics, machine learning, and AI in biology"
+  site-url: https://jimbogrif.github.io/
+  title: "Jim's Lab Notebook"
+  navbar:
+    right:
+      - about.qmd
+      - icon: github
+        href: https://github.com/jimbogrif
+format:
+  html:
+    theme:
+      - sandstone
+    css: styles.css
+
+
+
