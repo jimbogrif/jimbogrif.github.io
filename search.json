@@ -7,38 +7,24 @@
     "text": "I’m a computational biologist with eight years of industry experience in biotech R&D — building reproducible pipelines, turning complex NGS data into decisions, and collaborating with experimental and computational scientists in synthetic biology, gene therapy, and gene editing. My core strengths are high-throughput screening, metagenomics, genome assembly, single-cell RNA-seq, and variant characterization. At Amber Bio I used machine learning to optimize RNA editing constructs for stability, activity and specificity.\nI’m currently looking for my next role in Bay Area biotech or pharma. This blog is a way for me showcase my research side-projects with foundation models and pyTorch in an NDA-friendly way.\nEverything here runs on a single 4080 and public data — I build for efficiency by necessity. Give me more powerful hardware and more interesting data, and let’s see what’s possible. Reach out.\n← Check out my projects here"
   },
   {
-    "objectID": "posts/DNABERT2-classification/index.html",
-    "href": "posts/DNABERT2-classification/index.html",
-    "title": "Benchmarking Genomic Motif Classification with DNABERT-2 Embeddings",
-    "section": "",
-    "text": "Do DNABERT-2 embeddings learn genomic motif patterns? Can they outoutperform a simple CNN method? How well do linear probes on DNABERT-2 embeddings, LoRA fine-tuning, and full fine-tuning perform on motif classification tasks? This post benchmarks DNABERT-2 embeddings on a set of genomic motif classification tasks."
-  },
-  {
-    "objectID": "posts/DNABERT2-classification/index.html#description",
-    "href": "posts/DNABERT2-classification/index.html#description",
-    "title": "Benchmarking Genomic Motif Classification with DNABERT-2 Embeddings",
-    "section": "Description:",
-    "text": "Description:\nHow well do linear probes on DNABERT-2 embeddings, LoRA fine-tuning, and full fine-tuning perform on motif classification tasks?"
-  },
-  {
-    "objectID": "posts/DNABERT2-classification/index.html#outline",
-    "href": "posts/DNABERT2-classification/index.html#outline",
-    "title": "Benchmarking Genomic Motif Classification with DNABERT-2 Embeddings",
-    "section": "Outline:",
-    "text": "Outline:\nGenomic language models (gLMs) are similar to large language models (LLMs) but pre-trained on raw DNA sequences. In principle, these models can learn to identify complex genomic motifs like splice sites, cis-regulatory elements, and methylation patterns. gLM embeddings can be\ngenomic foundation model principles DNABERT2 architecture and MLM training objective How would the embeddings in a multi-species MLM trained model capture genomic features? What does the literature say: - Final layer is not necessarily the best correlated with a specific motif (nucleotide transformer paper) - Fine-tuned GLM models may not outperform CNNs for genomic motif classification (Tang & Koo)\n\nMy work:\nGLMs theoretically learn generalizable information about sequences, that can be leveraged for design problems where only limited experimental data is available. If this is true, they should outperform simpler architectures that can be trained on only the existing data (for example: a CNN + one-hot encoding) In addition, there are many ways to utilize a GLM, ranked in terms of training difficulty:\na probe model built on top of a fixed weight GLM\nLoRA fine-tuning the pre-trained GLM\n\nre-training the GLM from scratch for a specific task\n\nIn this work,\nI compare a baseline a CNN to the 3 cases shown above (using the original DNABERT2 results as an example of the last model style)\n    I show that classification performance is nearly identical for a linear probe and a simple non-linear model (2-layer MLP)\nI also compare two common methods of extracting information captured by the model (position-averaged mean pooling and BERT CLS tokens) for genomic motifs, and show that these methods break down for highly position sensitive motifs like splice sites.\nIn addition, I explore whether specific layers capture signal related to distinct motifs and whether final or internal layer embeddings are more generally useful\nLastly, I discuss the limitations of BERT / MLM models for generative or design applications, and discuss alternatives like CLM (Evo2)"
-  },
-  {
-    "objectID": "posts/DNABERT2-classification/index.html#references",
-    "href": "posts/DNABERT2-classification/index.html#references",
-    "title": "Benchmarking Genomic Motif Classification with DNABERT-2 Embeddings",
-    "section": "References",
-    "text": "References\nTang & Koo, Genome Biology 2025 \n \n    this is the one that takes probing frozen gLM embeddings as the object of study. Six cell-type-specific functional genomics tasks across DNA and RNA regulation; the conclusion is that probing current pre-trained gLMs gives no substantial advantage over conventional ML on one-hot encoded sequence, and well-tuned from-scratch supervised models are competitive or better. https://doi.org/10.1186/s13059-025-03674-8\n\nNucleotide Transformer, Nature Methods 2024 — ten layers × {logistic regression, small MLP} across 18 tasks, and the source of the \"best layer is never the final layer\" result. https://doi.org/10.1038/s41592-024-02523-z\n\nDNABERT-2, Nature Communications 2024 — the model used in this post. https://doi.org/10.1038/s41467-024-49703-0"
-  },
-  {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Learning about Bio x AI, one experiment at a time",
+    "title": "Re-learning Computational Biology in the Age of AI",
     "section": "",
-    "text": "Benchmarking Genomic Motif Classification with DNABERT-2 Embeddings\n\n\n\ncode\n\nanalysis\n\n\n\nHow well do linear probes on DNABERT-2 embeddings, LoRA fine-tuning, and full fine-tuning perform on motif classification tasks?\n\n\n\n\n\nOct 7, 2026\n\n\nJim Griffin\n\n\n\n\n\nNo matching items"
+    "text": "Bioinformatician / computational biologist exploring modern ML and foundation models through hands-on projects and posting what I learn here!\nAbout me →"
+  },
+  {
+    "objectID": "index.html#jim-griffin",
+    "href": "index.html#jim-griffin",
+    "title": "Re-learning Computational Biology in the Age of AI",
+    "section": "",
+    "text": "Bioinformatician / computational biologist exploring modern ML and foundation models through hands-on projects and posting what I learn here!\nAbout me →"
+  },
+  {
+    "objectID": "index.html#posts",
+    "href": "index.html#posts",
+    "title": "Re-learning Computational Biology in the Age of AI",
+    "section": "Posts",
+    "text": "Posts"
   }
 ]
