@@ -4,6 +4,7 @@ author: "Jim Griffin"
 date: "2026-10-07"
 categories: [code, analysis]
 image: "DNABERT.png"
+draft: true
 description: "How well do linear probes on DNABERT-2 embeddings, LoRA fine-tuning, and full fine-tuning perform on motif classification tasks?"
 ---
 

@@ -1,5 +1,5 @@
----
-title: "Learning about Bio x AI, one experiment at a time"
+<!-- ---
+title: "Re-learning computational biology in the age of AI"
 listing:
   contents: posts
   feed: true
@@ -10,6 +10,33 @@ listing:
   filter-ui: false
 page-layout: full
 title-block-banner: true
+--- -->
+
+
+---
+title: "Re-learning Computational Biology in the Age of AI"
+listing:
+  contents: posts
+  sort: "date desc"
+  type: default
+  feed: true
+page-layout: full
+title-block-banner: true
 ---
 
+::: {.profile-header}
+![](assets/headshot.jpg){.profile-pic}
 
+::: {.profile-text}
+## Jim Griffin
+
+Bioinformatician / computational biologist exploring modern ML and foundation
+models through hands-on projects and posting what I learn here! 
+
+[About me →](about.html)
+:::
+:::
+
+---
+
+## Posts
