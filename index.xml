@@ -10,7 +10,7 @@
 <atom:link href="https://jimbogrif.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Jim&#39;s blog about bioinformatics, machine learning, and AI in biology</description>
 <generator>quarto-1.10.19</generator>
-<lastBuildDate>Thu, 08 Oct 2026 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Thu, 08 Oct 2026 07:00:00 GMT</lastBuildDate>
 <item>
   <title>Benchmarking Genomic Motif Classification with DNABERT-2 Embeddings</title>
   <dc:creator>Jim Griffin</dc:creator>
@@ -2220,7 +2220,7 @@ Zhou, Zhihan, Yanrong Ji, Weijian Li, Pratik Dutta, Ramana Davuluri, and Han Liu
   <category>code</category>
   <category>analysis</category>
   <guid>https://jimbogrif.github.io/posts/DNABERT2-classification/</guid>
-  <pubDate>Thu, 08 Oct 2026 00:00:00 GMT</pubDate>
+  <pubDate>Thu, 08 Oct 2026 07:00:00 GMT</pubDate>
   <media:content url="https://jimbogrif.github.io/posts/DNABERT2-classification/DNABERT.png" medium="image" type="image/png" height="168" width="144"/>
 </item>
 </channel>
