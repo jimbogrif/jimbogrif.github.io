@@ -33,3 +33,14 @@
 .quarto-title-block .quarto-title .title {
   text-align: center;
 }
+
+/* Sandstone styles every .nav-tabs .nav-link with the same rule it uses for
+   .btn and the navbar: uppercase, 13px, line-height 22px. Scoped overrides so
+   panel-tabset labels read as body text (17px / 1.5) in the case written,
+   while navbar and button styling stay untouched. font-weight 500 is left as
+   sandstone sets it, to keep the labels distinct from the tab contents. */
+.panel-tabset .nav-tabs .nav-link {
+  text-transform: none;
+  font-size: inherit;
+  line-height: inherit;
+}

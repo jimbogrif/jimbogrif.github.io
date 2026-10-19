@@ -1,6 +1,8 @@
 [
   {
     "listing": "/index.html",
-    "items": []
+    "items": [
+      "/posts/DNABERT2-classification/index.html"
+    ]
   }
 ]
