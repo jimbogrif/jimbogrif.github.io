@@ -1,0 +1,216 @@
+% Bibliography for posts/DNABERT2-classification
+% Journal/preprint entries pulled from Crossref BibTeX (content negotiation on
+% the DOI); conference entries from the arXiv API. Braces protect capitalisation
+% of model and method names from the CSL title-case transform.
+
+@inproceedings{zhou2024dnabert2,
+  title         = {{DNABERT-2}: Efficient Foundation Model and Benchmark For Multi-Species Genome},
+  author        = {Zhou, Zhihan and Ji, Yanrong and Li, Weijian and Dutta, Pratik and Davuluri, Ramana and Liu, Han},
+  booktitle     = {International Conference on Learning Representations (ICLR)},
+  year          = {2024},
+  eprint        = {2306.15006},
+  archivePrefix = {arXiv},
+  primaryClass  = {q-bio.GN},
+  url           = {https://arxiv.org/abs/2306.15006},
+  annote        = {The model and the GUE benchmark suite used in this post.}
+}
+
+@article{ji2021dnabert,
+  title     = {{DNABERT}: pre-trained Bidirectional Encoder Representations from Transformers model for {DNA}-language in genome},
+  volume    = {37},
+  issn      = {1367-4811},
+  url       = {http://dx.doi.org/10.1093/bioinformatics/btab083},
+  doi       = {10.1093/bioinformatics/btab083},
+  number    = {15},
+  journal   = {Bioinformatics},
+  publisher = {Oxford University Press (OUP)},
+  author    = {Ji, Yanrong and Zhou, Zhihan and Liu, Han and Davuluri, Ramana V},
+  year      = {2021},
+  month     = feb,
+  pages     = {2112--2120},
+  annote    = {The k-mer tokenized predecessor to DNABERT-2.}
+}
+
+@article{dallatorre2024nt,
+  title     = {Nucleotide Transformer: building and evaluating robust foundation models for human genomics},
+  volume    = {22},
+  issn      = {1548-7105},
+  url       = {http://dx.doi.org/10.1038/s41592-024-02523-z},
+  doi       = {10.1038/s41592-024-02523-z},
+  number    = {2},
+  journal   = {Nature Methods},
+  publisher = {Springer Science and Business Media LLC},
+  author    = {Dalla-Torre, Hugo and Gonzalez, Liam and Mendoza-Revilla, Javier and Lopez Carranza, Nicolas and Grzywaczewski, Adam Henryk and Oteri, Francesco and Dallago, Christian and Trop, Evan and de Almeida, Bernardo P. and Sirelkhatim, Hassan and Richard, Guillaume and Skwark, Marcin and Beguir, Karim and Lopez, Marie and Pierrot, Thomas},
+  year      = {2024},
+  month     = nov,
+  pages     = {287--297},
+  annote    = {Ten layers x {logistic regression, small MLP} across 18 tasks, and the source of the "best layer is never the final layer" result.}
+}
+
+@article{tang2025probing,
+  title     = {Evaluating the representational power of pre-trained {DNA} language models for regulatory genomics},
+  volume    = {26},
+  issn      = {1474-760X},
+  url       = {http://dx.doi.org/10.1186/s13059-025-03674-8},
+  doi       = {10.1186/s13059-025-03674-8},
+  number    = {1},
+  journal   = {Genome Biology},
+  publisher = {Springer Science and Business Media LLC},
+  author    = {Tang, Ziqi and Somia, Nirali and Yu, Yiyang and Koo, Peter K.},
+  year      = {2025},
+  month     = jul,
+  annote    = {Takes probing frozen gLM embeddings as the object of study across six cell-type-specific functional genomics tasks; concludes that probing current pre-trained gLMs gives no substantial advantage over conventional ML on one-hot encoded sequence, and that well-tuned from-scratch supervised models are competitive or better.}
+}
+
+@inproceedings{marin2024bend,
+  title         = {{BEND}: Benchmarking {DNA} Language Models on biologically meaningful tasks},
+  author        = {Marin, Frederikke Isa and Teufel, Felix and Horlacher, Marc and Madsen, Dennis and Pultz, Dennis and Winther, Ole and Boomsma, Wouter},
+  booktitle     = {International Conference on Learning Representations (ICLR)},
+  year          = {2024},
+  eprint        = {2311.12570},
+  archivePrefix = {arXiv},
+  primaryClass  = {q-bio.GN},
+  url           = {https://arxiv.org/abs/2311.12570}
+}
+
+@inproceedings{hu2022lora,
+  title         = {{LoRA}: Low-Rank Adaptation of Large Language Models},
+  author        = {Hu, Edward J. and Shen, Yelong and Wallis, Phillip and Allen-Zhu, Zeyuan and Li, Yuanzhi and Wang, Shean and Wang, Lu and Chen, Weizhu},
+  booktitle     = {International Conference on Learning Representations (ICLR)},
+  year          = {2022},
+  eprint        = {2106.09685},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/2106.09685}
+}
+
+@inproceedings{press2022alibi,
+  title         = {Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation},
+  author        = {Press, Ofir and Smith, Noah A. and Lewis, Mike},
+  booktitle     = {International Conference on Learning Representations (ICLR)},
+  year          = {2022},
+  eprint        = {2108.12409},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/2108.12409},
+  annote        = {{ALiBi}.}
+}
+
+@inproceedings{sennrich2016bpe,
+  title     = {Neural Machine Translation of Rare Words with Subword Units},
+  url       = {http://dx.doi.org/10.18653/v1/P16-1162},
+  doi       = {10.18653/v1/P16-1162},
+  booktitle = {Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
+  publisher = {Association for Computational Linguistics},
+  author    = {Sennrich, Rico and Haddow, Barry and Birch, Alexandra},
+  year      = {2016},
+  annote    = {Byte-pair encoding.}
+}
+
+@article{brixi2025evo2,
+  title     = {Genome modeling and design across all domains of life with {Evo 2}},
+  url       = {http://dx.doi.org/10.1101/2025.02.18.638918},
+  doi       = {10.1101/2025.02.18.638918},
+  publisher = {bioRxiv},
+  author    = {Brixi, Garyk and Durrant, Matthew G. and Ku, Jerome and Poli, Michael and Brockman, Greg and Chang, Daniel and Gonzalez, Gabriel A. and King, Samuel H. and Li, David B. and Merchant, Aditi T. and Naghipourfar, Mohsen and Nguyen, Eric and Ricci-Tam, Chiara and Romero, David W. and Sun, Gwanggyu and Taghibakshi, Ali and Vorontsov, Anton and Yang, Brandon and Deng, Myra and Gorton, Liv and Nguyen, Nam and Wang, Nicholas K. and Adams, Etowah and Baccus, Stephen A. and Dillmann, Steven and Ermon, Stefano and Guo, Daniel and Ilango, Rajesh and Janik, Ken and Lu, Amy X. and Mehta, Reshma and Mofrad, Mohammad R.K. and Ng, Madelena Y. and Pannu, Jaspreet and R{\'e}, Christopher and Schmok, Jonathan C. and St. John, John and Sullivan, Jeremy and Zhu, Kevin and Zynda, Greg and Balsam, Daniel and Collison, Patrick and Costa, Anthony B. and Hernandez-Boussard, Tina and Ho, Eric and Liu, Ming-Yu and McGrath, Thomas and Powell, Kimberly and Burke, Dave P. and Goodarzi, Hani and Hsu, Patrick D. and Hie, Brian L.},
+  year      = {2025},
+  month     = feb
+}
+
+@article{jaganathan2019spliceai,
+  title     = {Predicting Splicing from Primary Sequence with Deep Learning},
+  volume    = {176},
+  issn      = {0092-8674},
+  url       = {http://dx.doi.org/10.1016/j.cell.2018.12.015},
+  doi       = {10.1016/j.cell.2018.12.015},
+  number    = {3},
+  journal   = {Cell},
+  publisher = {Elsevier BV},
+  author    = {Jaganathan, Kishore and Kyriazopoulou Panagiotopoulou, Sofia and McRae, Jeremy F. and Darbandi, Siavash Fazel and Knowles, David and Li, Yang I. and Kosmicki, Jack A. and Arbelaez, Juan and Cui, Wenwu and Schwartz, Grace B. and Chow, Eric D. and Kanterakis, Efstathios and Gao, Hong and Kia, Amirali and Batzoglou, Serafim and Sanders, Stephan J. and Farh, Kyle Kai-How},
+  year      = {2019},
+  month     = jan,
+  pages     = {535--548.e24},
+  annote    = {{SpliceAI}.}
+}
+
+@misc{mangrulkar2022peft,
+  title        = {{PEFT}: State-of-the-art Parameter-Efficient Fine-Tuning methods},
+  author       = {Mangrulkar, Sourab and Gugger, Sylvain and Debut, Lysandre and Belkada, Younes and Paul, Sayak and Bossan, Benjamin},
+  year         = {2022},
+  howpublished = {\url{https://github.com/huggingface/peft}},
+  url          = {https://github.com/huggingface/peft}
+}
+
+@article{zeng2022pangolin,
+  title     = {Predicting {RNA} splicing from {DNA} sequence using {Pangolin}},
+  volume    = {23},
+  issn      = {1474-760X},
+  url       = {http://dx.doi.org/10.1186/s13059-022-02664-4},
+  doi       = {10.1186/s13059-022-02664-4},
+  number    = {1},
+  journal   = {Genome Biology},
+  publisher = {Springer Science and Business Media LLC},
+  author    = {Zeng, Tony and Li, Yang I.},
+  year      = {2022},
+  month     = apr,
+  pages     = {103},
+  annote    = {{Pangolin}.}
+}
+
+@article{chao2025openspliceai,
+  title     = {{OpenSpliceAI} provides an efficient modular implementation of {SpliceAI} enabling easy retraining across nonhuman species},
+  volume    = {14},
+  issn      = {2050-084X},
+  url       = {http://dx.doi.org/10.7554/eLife.107454},
+  doi       = {10.7554/eLife.107454},
+  journal   = {eLife},
+  publisher = {eLife Sciences Publications, Ltd},
+  author    = {Chao, Kuan-Hao and Mao, Alan and Liu, Anqi and Salzberg, Steven L. and Pertea, Mihaela},
+  year      = {2025},
+  month     = oct,
+  pages     = {RP107454},
+  annote    = {{OpenSpliceAI}. Open-source {PyTorch} reimplementation of {SpliceAI} supporting retraining on custom species and datasets.}
+}
+
+@article{bellidomolias2026benchmark,
+  title     = {Evaluating the performance of splicing predictors on thousands of synthetic gene variants},
+  url       = {http://dx.doi.org/10.64898/2026.08.24.746734},
+  doi       = {10.64898/2026.08.24.746734},
+  publisher = {bioRxiv},
+  author    = {Bellido Molias, Fernando and Kudla, Grzegorz},
+  year      = {2026},
+  month     = aug,
+  annote    = {Benchmarks eleven splicing predictors on recoded synthetic {GFP} variants measured by long-read sequencing. {SpliceTransformer} ranked highest, followed by {AlphaGenome} and {SpliceAI}. Preprint.}
+}
+
+@article{you2024splicetransformer,
+  title     = {{SpliceTransformer} predicts tissue-specific splicing linked to human diseases},
+  volume    = {15},
+  issn      = {2041-1723},
+  url       = {http://dx.doi.org/10.1038/s41467-024-53088-6},
+  doi       = {10.1038/s41467-024-53088-6},
+  number    = {1},
+  journal   = {Nature Communications},
+  publisher = {Springer Science and Business Media LLC},
+  author    = {You, Ningyuan and Liu, Chang and Gu, Yuxin and Wang, Rong and Jia, Hanying and Zhang, Tianyun and Jiang, Song and Shi, Jinsong and Chen, Ming and Guan, Min-Xin and Sun, Siqi and Pei, Shanshan and Liu, Zhihong and Shen, Ning},
+  year      = {2024},
+  month     = oct,
+  pages     = {9129},
+  annote    = {{SpliceTransformer}.}
+}
+
+@article{avsec2026alphagenome,
+  title     = {Advancing regulatory variant effect prediction with {AlphaGenome}},
+  volume    = {649},
+  issn      = {1476-4687},
+  url       = {http://dx.doi.org/10.1038/s41586-025-10014-0},
+  doi       = {10.1038/s41586-025-10014-0},
+  number    = {8099},
+  journal   = {Nature},
+  publisher = {Springer Science and Business Media LLC},
+  author    = {Avsec, {\v{Z}}iga and Latysheva, Natasha and Cheng, Jun and Novati, Guido and Wong, Chloe Hsu and Benegas, Gonzalo and Seninge, Lucas and Shcherbinin, Dmitrii and Patel, Aaditya and Shuai, Richard W. and Jumper, John and Hassabis, Demis and Kelley, David R.},
+  year      = {2026},
+  month     = jan,
+  pages     = {1206--1218},
+  annote    = {{AlphaGenome}. Not available for commercial use.}
+}

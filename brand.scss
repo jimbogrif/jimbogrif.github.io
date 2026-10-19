@@ -1,0 +1,98 @@
+/*
+  Field Notes — Quarto brand layer over Sandstone.
+
+  Referenced AFTER sandstone in _quarto.yml:
+
+      format:
+        html:
+          theme: [sandstone, brand.scss]
+
+  It overrides only four of Sandstone's opinions (font, headings weight, link
+  color, inline-code style) and adds figure/caption rules. Everything else in
+  Sandstone is kept.
+
+  The Lato webfont (400, 700, 900 + italics) is fetched by the <link> tags in
+  _quarto.yml (include-in-header), not by a CSS @import here: Quarto emits this
+  layer below other rules, and a browser ignores an @import that is not at the
+  top of the stylesheet.
+*/
+
+/*-- scss:defaults --*/
+
+// !default is required on overrides of !default theme variables — Quarto
+// places this layer ahead of the theme's own defaults, and in Sass the first
+// !default assignment wins.
+
+// Typography: Lato everywhere, headings in Lato Black.
+$font-family-sans-serif: "Lato", system-ui, -apple-system, "Segoe UI", sans-serif !default;
+$headings-font-family:   "Lato", system-ui, -apple-system, "Segoe UI", sans-serif !default;
+$headings-font-weight:   900;
+$font-size-base:         1rem;        // 17px body (Quarto sets the root to 17px)
+
+// Links: calm navy (from the figures) instead of Sandstone's neon green.
+$link-color:       #003488;
+$link-hover-color: #2c73cc;
+$link-decoration:  underline;         // always underlined
+
+// Inline code: recolor text away from Sandstone's magenta (chip added in rules).
+$code-color:       #3e3f3a;
+
+/*-- scss:rules --*/
+
+// Content links: keep the underline Sandstone tends to strip, brighten on hover.
+#quarto-content {
+  a:not(.btn):not(.nav-link):not(.toc-action):not(.quarto-navigation-tool) {
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
+  }
+  a:not(.btn):not(.nav-link):hover { color: #2c73cc; }
+
+  // Listing items: only the title reads as a link. The description and the
+  // date/author line stay clickable but look like plain text.
+  .quarto-post :is(.delink, .metadata) a,
+  .quarto-post :is(.delink, .metadata) a:hover {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+// Inline code: warm neutral chip (Bootstrap gives inline <code> no background).
+#quarto-content code:not(pre code) {
+  background-color: #ece6dc;
+  color: #3e3f3a;
+  padding: 0.12em 0.35em;
+  border-radius: 4px;         // radius-sm
+  font-size: 0.88em;
+}
+
+// Figures: centered, capped width, warm caption.
+#quarto-content {
+  figure, .quarto-figure { margin-block: 1.75rem; text-align: center; }
+
+  figure img, .quarto-figure img, p > img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  figcaption, .figure-caption {
+    color: #8e8c84;             // ink-muted
+    font-size: 0.9em;
+    line-height: 1.4;
+    margin-top: 0.5rem;
+    text-align: center;
+  }
+
+  // Inside tabsets, captions run to paragraphs and bullet lists: read them
+  // left-aligned. Images stay centered; code blocks are not targeted.
+  // (Quarto wraps figure images in <p>, hence the :not.)
+  .panel-tabset .tab-content :is(p:not(figure p), li, figcaption, .figure-caption) {
+    text-align: left;
+  }
+
+  // ...and at body size in a slightly lighter ink than body text (#3e3f3a),
+  // not the muted figure-caption style.
+  .panel-tabset .tab-content :is(figcaption, .figure-caption) {
+    color: #64635d;
+    font-size: 1em;
+  }
+}

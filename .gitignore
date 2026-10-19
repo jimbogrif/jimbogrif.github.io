@@ -1,5 +1,5 @@
 # Remove if I want cached python output:
-/_freeze/
+# /_freeze/
 
 # Quarto build artifacts
 /.quarto/
@@ -16,5 +16,7 @@ __pycache__/
 *~
 .directory
 .vscode/
+*.bak
+*.bak-*
 # Mac:
 .DS_Store

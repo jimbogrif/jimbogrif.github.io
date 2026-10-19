@@ -1,0 +1,27 @@
+/*-- scss:defaults --*/
+
+// Site-wide body and heading type.
+//
+// Sandstone ships this stack with Roboto first; Lato replaces it and the rest
+// of the fallback chain is kept verbatim. Setting $font-family-sans-serif is
+// enough to cover headings too — sandstone defines no separate heading family,
+// so headings inherit from the body. Code keeps $font-family-monospace.
+//
+// The webfont is fetched by the <link> tags in _quarto.yml (include-in-header),
+// not by a CSS @import here: Quarto emits this layer below other rules, and a
+// browser ignores an @import that is not at the top of the stylesheet.
+//
+// !default is required — Quarto places this layer ahead of the theme's own
+// defaults, and in Sass the first !default assignment wins.
+
+$font-family-sans-serif:
+  "Lato",
+  -apple-system,
+  BlinkMacSystemFont,
+  "Segoe UI",
+  "Helvetica Neue",
+  Arial,
+  sans-serif,
+  "Apple Color Emoji",
+  "Segoe UI Emoji",
+  "Segoe UI Symbol" !default;
