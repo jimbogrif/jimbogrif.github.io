@@ -233,7 +233,7 @@ Every frozen probe model in this study destroys position. Mean pooling averages 
 
 - [Splice site data composition](#){.tab-link data-tab="Splice site dataset composition"}: For most of the tasks in the GUE benchmark, the underlying nucleotide statistics carry the model performance. On the other hand, the acceptor and donor-labeled sequences in the splice-site prediction task are centered on highly-conserved motifs, and fine-tuning the full position-aware model provides a large benefit.
 - [Changing the pooling approach improves splice site probe models](#){.tab-link data-tab="Alternate pooling helps splice site probe models"}. On splice site prediction, reading frozen embeddings in eight windows instead of one mean adds **+0.245 test MCC**. On two control datasets with less defined motifs, the identical change has almost no effect (+0.012 and +0.020 test MCC). The gain is positional, not a side effect of the extra features. Shuffling the windows underperforms simple mean pooling (MCC = 0.411), but the best *single* window reaches a test MCC=0.613 while being no wider than mean pooling version. Unsurprisingly, the dev selected window spans bp 200–250, beginning exactly at the most conserved portion of the splice site.
-- [LoRA is simply easier and better](#){.tab-link data-tab="LoRA is safer and easier"}. As shown in this UMAP visualization, DNABERT-2 fine-tuned using LoRA with a `BertForSequenceClassification` trains the encoder's `[CLS]` token into an easily distinguishable sequence class identifier across all of the GUE Benchmarks. 
+- [Or you could just fine-tune](#){.tab-link data-tab="Or just fine-tune"}. As shown in this UMAP visualization, DNABERT-2 fine-tuned using LoRA with a `BertForSequenceClassification` trains the encoder's `[CLS]` token into an easily distinguishable sequence class identifier across all of the GUE Benchmarks. 
 
 
 ::: {.panel-tabset .column-page-right}
@@ -264,12 +264,13 @@ I tested alternatives to mean-pooling to confirm that this was the cause of poor
 
 No — the LoRA model outperforms all of the probe models, regardless of pooler. LoRA at 0.75% of the weights, reading position 0 through an adapted encoder rather than a chosen part of a frozen one, reaches **0.860** on splice: +0.154 over the best frozen window (above) readout and +0.396 over mean pooling. Reading a frozen model in the right place with the right approach only helps recovers a portion of what mean pooling discards. This is yet another reason to never bother with probe models. They may work, but seemingly small choices can lead to wildly different loss depending on the task.
 
-## LoRA is safer and easier
+## Or just fine-tune
 ![](assets/lora_cls_umap.svg){width=100%}
 
 **Fine-tuning trains each sequence's first token (`[CLS]`).** Each cell in the top row is a UMAP representation of the same held-out test sequences for promoter detection. The bottom shows the same for splice-site prediction. Columns 1–3 are label-free embeddings colored by class identity: 6-mer frequencies, and frozen DNABERT-2 embeddings read at each task's dev-selected layer using mean or [CLS] pooling. Column 4 is [CLS] of the same encoder after attention-only LoRA (r = 8, seed 42, 887k of 118M parameters trainable). MCC is a linear probe for the label-free columns and the fine-tuned head for column 4. 
 
-- The eight fits are independent, so orientation, scale and inter-cluster distance are not comparable across panels. The key takeaway is that fine-tuning re-organizes information embedded in DNABERT-2's massive parameter space into a single token without averaging across the entire sequence, allowing it to leverage attention and any of the useful patterns it learned during pre-training.
+- The eight fits are independent, so orientation, scale and inter-cluster distance are not comparable across panels. 
+- The key takeaway is that fine-tuning re-organizes information embedded in DNABERT-2 into a single token without averaging across the entire sequence, allowing it to learn task-specific postional information alongside any of the useful patterns it learned during pre-training.
 
 :::
 
