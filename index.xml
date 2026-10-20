@@ -10,7 +10,7 @@
 <atom:link href="https://jimbogrif.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Jim&#39;s blog about bioinformatics, machine learning, and AI in biology</description>
 <generator>quarto-1.10.19</generator>
-<lastBuildDate>Thu, 08 Oct 2026 07:00:00 GMT</lastBuildDate>
+<lastBuildDate>Thu, 08 Oct 2026 00:00:00 GMT</lastBuildDate>
 <item>
   <title>Benchmarking Genomic Motif Classification with DNABERT-2 Embeddings</title>
   <dc:creator>Jim Griffin</dc:creator>
@@ -23,10 +23,45 @@
 
 <section id="intro" class="level2 page-columns page-full">
 <h2 class="anchored" data-anchor-id="intro">Intro</h2>
-<p>In this post I’ll explore DNABERT-2 <span class="citation" data-cites="zhou2024dnabert2">(Zhou et al. 2024)</span>, a genomic language model (gLM) published in 2024. I will highlight some claims made in their paper and subsequent benchmarking studies <span class="citation" data-cites="marin2024bend tang2025probing">(Marin et al. 2024; Tang et al. 2025)</span> about gLM classification performance, best practices, and task-specific training approaches. Then I will benchmark short-sequence motif classification performance in the <a href="https://arxiv.org/abs/2306.15006">Genome Understanding Evaluation (GUE)</a> benchmark suite using a non-gLM baseline and a ladder of task-specific training approaches increasing in size and complexity. All models are compared with the full fine-tuning results published in the authors’ original paper. Each tab shows one modeling approach I built:</p>
-<div class="tabset-margin-container"></div><div class="panel-tabset column-page-right">
+<p>In this post I’ll explore DNABERT-2 <span class="citation" data-cites="zhou2024dnabert2">(Zhou et al. 2024)</span>, a genomic language model (gLM) published in 2024. gLM authors and subsequent benchmarking studies have made conflicting claims about gLM classification performance and best practices for task-specific training <span class="citation" data-cites="marin2024bend tang2025probing">(Marin et al. 2024; Tang et al. 2025)</span>. Here, I benchmark short-sequence motif classification performance in the <a href="https://arxiv.org/abs/2306.15006">Genome Understanding Evaluation (GUE)</a> benchmark suite using a non-gLM baseline and a ladder of task-specific training approaches increasing in size and complexity.</p>
+<p>In principle, <strong>fine-tuning a gLM that has already absorbed the statistics of millions of genomic positions should give a more accurate model than one trained only on a small number of labeled examples.</strong> I test the following hypotheses to see how well DNABERT-2 fulfills these expectations:</p>
+<style>
+/* Hypothesis callouts: no top/bottom margin so they stack tightly */
+.callout.hypothesis { margin-top: 0; margin-bottom: 0; }
+</style>
+<div class="hypothesis callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>H1 · Pre-training learns biology, not just nucleotide statistics
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If self-supervised pre-training teaches DNABERT-2 genuine genomic structure — motifs, grammar, conservation — then its frozen embeddings should outclass features built from a baseline k-mer frequency model with no positional or contextual information.</p>
+<p>→ <em>Tested in Frozen embeddings do not beat a k-mer bag.</em></p>
+</div>
+</div>
+<div class="hypothesis callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>H2 · Optimizing embedding layer selection improves probe model performance
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Transformers tend to autonomously develop “layer specialization”. Early layers often focus on token-level statistics, and deeper layers capture more abstract properties. Probe models trained on gLMs like Nucleotide Transformer have been reported to have the same properties <span class="citation" data-cites="dallatorre2024nt">(Dalla-Torre et al. 2024)</span>.</p>
+<p>→ <em>Tested in Layer selection affects probe performance.</em></p>
+</div>
+</div>
+<p>&nbsp;</p>
+<p>See Methods for more detail. All models were compared with the full fine-tuning results published in the authors’ original paper. Each tab shows one modeling approach I built:</p>
+<div class="tabset-margin-container"></div><div id="model-tabset" class="panel-tabset column-page-right">
 <ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" aria-controls="tabset-1-1" aria-selected="true" href="">Baseline</a></li><li class="nav-item"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" aria-controls="tabset-1-2" aria-selected="false" href="">Frozen gLM + Probe</a></li><li class="nav-item"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" aria-controls="tabset-1-3" aria-selected="false" href="">LoRA fine-tuning</a></li></ul>
-<div class="tab-content">
+<div id="model-tabset" class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" aria-labelledby="tabset-1-1-tab">
 <p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/baseline_bag.svg" class="img-fluid" style="width:100.0%" alt="Schematic of the baseline arm. A GUE sequence box on the left splits into two featurization routes: k-mer counting for k in 3 to 6, giving 4^k frequencies of 64, 256, 1,024 or 4,096 dimensions; and the DNABERT-2 BPE tokenizer with its 4,096-token vocabulary, giving 4,096-dimensional token frequencies, annotated that the tokenizer alone is used and the encoder is never run. Both routes feed the same trained head, holding a logistic regression and a 2-layer MLP, the only trained weights. A footer notes that 4^6 = 4,096, so the 6-mer bag and DNABERT-2's entire vocabulary have identical cardinality, and that frequencies are L1-normalized per sequence."></p>
 <p><strong>Baseline:</strong> Linear (logistic regression) and non-linear (2-layer MLP) models trained to predict class labels using a deliberately simple sequence embedding: k-mer frequency or BPE frequency.</p>
@@ -49,19 +84,17 @@
 </div>
 </div>
 </div>
+</section>
+<section id="background" class="level2">
+<h2 class="anchored" data-anchor-id="background">Background:</h2>
 <section id="genomic-foundation-models" class="level3">
 <h3 class="anchored" data-anchor-id="genomic-foundation-models">Genomic foundation models</h3>
-<p>A genomic language model (gLM) is a transformer pre-trained on raw DNA with no functional labels, in the hope that the representations it learns transfer to many downstream tasks at once. The premise is analogous to natural language processing (NLP) and protein modeling: train once on a large unlabeled corpus, then reuse the embeddings as general-purpose features. For genomics, general-purpose embeddings are promising because experimental data is limited. When designing gene therapy or gene editing constructs, high-throughput screening is often used to compare and rank variants across diverse functional characteristics including expression, splice-site usage, or binding activity. Models that have already absorbed the statistics of millions of genomic positions should, in principle, need far fewer labeled examples to reach usable accuracy across a wide range of tasks.</p>
-<p>There are two assumptions baked into this premise.</p>
-<ol type="1">
-<li>Self-supervised pre-training on genomes captures biologically meaningful structure — motifs, grammar, and evolutionary conservation — rather than just low-level nucleotide statistics.</li>
-<li>Sequence embeddings generalize to a broad range of tasks with minimal to no task-specific fine-tuning.</li>
-</ol>
+<p>A genomic language model (gLM) is a transformer pre-trained on raw DNA with no functional labels, in the hope that the representations it learns transfer to many downstream tasks at once. The premise is analogous to natural language processing (NLP) and protein modeling: train once on a large unlabeled corpus, then reuse the embeddings as general-purpose features. For genomics, general-purpose embeddings are promising because experimental data is limited. For nucleic acid constructs, high-throughput screening (HTS) is the gold standard for optimizing diverse characteristics like expression or activity. Fine-tuning gLMs with task-specific HTS data can enable <em>in silico</em> screening, improving the efficiency of costly screening campaigns.</p>
 </section>
 <section id="dnabert-2-architecture-limitations" class="level3">
 <h3 class="anchored" data-anchor-id="dnabert-2-architecture-limitations">DNABERT-2 architecture &amp; limitations</h3>
 <p>DNABERT-2 is a BERT-style encoder with 117M parameters, pre-trained on 135 genomes (~32B nucleotides) via masked language modeling <span class="citation" data-cites="zhou2024dnabert2">(Zhou et al. 2024)</span>. I chose it because it is small enough to fine-tune on a consumer GPU while still scoring competitively on sequence classification benchmarks <span class="citation" data-cites="marin2024bend">(Marin et al. 2024)</span>, and because both its weights and its benchmark suite ship on HuggingFace.</p>
-<p>Architecture, tokenizer, and training objective each constrain what a gLM can do — how accurate it is, how fast it trains, and whether it can generate sequences at all. Some of the choices that define DNABERT-2 are:</p>
+<p>Three design choices shape what DNABERT-2 can do — how it tokenizes nucleotides, generalizes to different input lengths — and why it can’t be used for sequence generation:</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
 <ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" aria-controls="tabset-2-1" aria-selected="true" href="">Byte-Pair Encoding (BPE)</a></li><li class="nav-item"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" aria-controls="tabset-2-2" aria-selected="false" href="">ALiBi</a></li><li class="nav-item"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" aria-controls="tabset-2-3" aria-selected="false" href="">MLM Training</a></li></ul>
 <div class="tab-content">
@@ -86,7 +119,20 @@
 </div>
 </div>
 </div>
-<p><em>That last limit is a design choice, not a law</em>. Evo 2 is causally trained and does both — generating sequence while reaching state-of-the-art classification on many tasks with no fine-tuning at all <span class="citation" data-cites="brixi2025evo2">(Brixi et al. 2025)</span>. <strong>Expect a follow-up post on sequence generation once I find a cost-effective way to run Evo 2!</strong></p>
+<p><em>That last limit is a design choice, not a law</em>. Evo 2 (a causally trained model) generates sequences &amp; achieves state-of-the-art classification on many tasks with no fine-tuning at all <span class="citation" data-cites="brixi2025evo2">(Brixi et al. 2025)</span>.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Follow-up coming
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Expect a post on sequence generation once I find a cost-effective way to run Evo 2.</p>
+</div>
+</div>
 </section>
 <section id="lora-low-rank-adaptation-of-large-language-models" class="level3">
 <h3 class="anchored" data-anchor-id="lora-low-rank-adaptation-of-large-language-models">LoRA: Low-rank adaptation of large language models</h3>
@@ -103,24 +149,65 @@
 <h2 class="anchored" data-anchor-id="results">Results</h2>
 <section id="frozen-embeddings-do-not-beat-a-k-mer-bag" class="level3 page-columns page-full">
 <h3 class="anchored" data-anchor-id="frozen-embeddings-do-not-beat-a-k-mer-bag">Frozen embeddings do not beat a k-mer bag</h3>
-<p>Across the 26 GUE datasets I evaluated, k-mer frequency and DNABERT-2 frozen embeddings performed nearly identically when coupled to a classification head. I embeded sequences with DNABERT-2’s frozen public model weights and simple k-mer frequency encoding (literally the frequency of every 3-6 length combination of bases. Frozen embeddings read at the best layer with the best of two pooling approaches and the best of two heads averaged 0.5906 mean test MCC. 6-mer frequency encoding averaged 0.5898, meaning the frozen-probe approach led to a median increase in classification accuracy of +0.011 test MCC above the baseline model. The embeddings won on just 14 of 26 benchmarks. This is in-line with <span class="citation" data-cites="tang2025probing">(Tang et al. 2025)</span> and in stark contrast to the more favorable performance in [arxiv.org/abs/2608.05329], although both cases reported task-dependent performance.</p>
-<p>To me, this signals that the frozen weight + probe approach is not worth it. By the time you’ve set up Torch, fetched DNABERT-2 from HuggingFace, and fixed the bugs in DNABERT-2 (by default <code>output_all_encoded_layers=True</code> does nothing), you could probably have achieved similar performance with a much simpler model. Still, I found a couple of interesting things when evaluating this approach:</p>
+<p>I embedded sequences with DNABERT-2’s frozen public model weights and a simple k-mer frequency encoding (literally the frequency of every 3-6 length combination of bases).</p>
 <ul>
-<li>Frozen + probe vs.&nbsp;full fine-tuning: The best dev-selected frozen embedding probes were 88.7% as accurate (median test MCC) as the published fine-tuned models in the paper’s Table 6 (range 74.6–104.9%), and exceeded the paper on 1 of 26 datasets.</li>
+<li>On average, k-mer frequency- and DNABERT-2 frozen embedding-based models had nearly identical classification accuracy. Median test MCC normalized to the fine-tuned gold standard was 82% for the k-mer based models and 85% for frozen embeddings. The embeddings won on just 15 of 27 benchmarks.</li>
+<li>Frozen + probe vs.&nbsp;full fine-tuning: On average, fine-tuning DNABERT-2 provides a ~15% increase in classification accuracy above the best probe models. Relative performance was stable, excluding splice site prediction. Per task accuracy varied immensely, from 0.93 test MCC in one promoter classification dataset to 0.32 in an epigenetic marker detection dataset (<em>H3K4me2</em>).</li>
+</ul>
+<p>Initially I expected the gap between k-mer frequency and frozen weights to be much larger. Even outside the realm of gLMs, this is a relatively naive sequence representation and I was not expecting this to perform as well as it did. One issue I realized later (and address further on) is that the mean pooling approach I used is suboptimal for several tasks. By averaging each dimension across all nucleotide positions, a lot of the positional information is lost.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span><strong>TLDR:</strong> Probing frozen weights is not worth it
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>If you understand when mean pooling over token length is a bad idea, just fine-tune the model.</li>
+<li>If not, by the time you’ve set up Torch and fixed the bugs in DNABERT-2<sup>1</sup> you could be have achieved similar performance with a simpler model in scikit-learn that you actually understand.</li>
+</ul>
+</div>
+</div>
+<div class="tabset-margin-container"></div><div class="panel-tabset column-page-right">
+<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" aria-controls="tabset-3-1" aria-selected="true" href="">Relative model performance</a></li><li class="nav-item"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" aria-controls="tabset-3-2" aria-selected="false" href="">Absolute accuracy: frozen vs.&nbsp;paper</a></li></ul>
+<div class="tab-content">
+<div id="tabset-3-1" class="tab-pane active" aria-labelledby="tabset-3-1-tab">
+<p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/four_arms_norm.svg" class="img-fluid"></p>
+<div class="figure-caption">
+<p><strong>Test MCC normalized to DNABERT-2 fine-tuned to each task in original paper.</strong> Each group shows the best dev-selected test MCC for 3 model variants. <em>Light</em>: baseline k-mer frequency + Probe (Logistic Regression or MLP), <em>Medium</em>: frozen DNABERT-2 embedding + Probe, or <em>Dark</em>: LoRA fine-tuned model. Points are normalized values for individual datasets in that GUE benchmark.</p>
+</div>
+<ul>
+<li><p>Frozen embeddings read at the best layer with the best of two pooling approaches and the best of two heads averaged 0.5906 mean test MCC. 6-mer frequency encoding averaged 0.5898, meaning <em>the frozen-probe approach led to a median increase in classification accuracy of just +0.011 test MCC above the deliberately simple baseline model</em>.</p></li>
+<li><p><strong>Establishing a baseline is important when comparing modeling approaches.</strong> The DNABERT-2 paper does not include any non-gLM based comparison so its hard to establish task difficulty or put model performance in context, except against other gLMs. The relative strength of the k-mer baseline, a model with no positional awareness or information beyond nucleotide statistics, highlights the overall weakness of DNABERT-2 and its extracted embeddings for general sequence classification problems.</p></li>
+<li><p>This is in-line with <span class="citation" data-cites="tang2025probing">(Tang et al. 2025)</span> and in stark contrast to the more favorable performance in [arxiv.org/abs/2608.05329], although both cases reported task-dependent performance.</p></li>
+</ul>
+</div>
+<div id="tabset-3-2" class="tab-pane" aria-labelledby="tabset-3-2-tab">
+<p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/vs_paper.svg" class="img-fluid"></p>
+<div class="figure-caption">
+<p><strong>Best frozen weight-based model compared with the paper’s fully fine-tuned model score.</strong> Open circles are the fine-tuned model test MCC scores reported in Table 6 of the paper, closed circles are test MCC from the best dev selected model across all layer x head combinations.</p>
+</div>
+<ul>
+<li>The best dev-selected frozen embedding probes were 88.7% as accurate (median test MCC, excluding splice site prediction) as the published fine-tuned models in the paper’s Table 6 (range 74.6–104.9%), and exceeded the paper on 1 of 26 datasets.</li>
+<li>In the next section, I’ll discuss why the original pooler I used is inappropriate for splice site prediction and show how to fix it.</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-probe-performance" class="level3 page-columns page-full">
+<h3 class="anchored" data-anchor-id="sec-probe-performance">Layer selection affects probe performance, LR vs.&nbsp;MLP does not</h3>
+<ul>
 <li>The final layer is never optimal: Frozen embeddings extracted from layers 2-6 outperformed the final layer embedding in nearly all cases.</li>
 <li>LR vs MLP is a toss-up. Replacing logistic regression with a nonlinear MLP made essentially no difference on best-case frozen embedding model performance. For k-mer models, the feature space is k^4. As k-mer and feature-space size decrease, the MLP - LR gap widens.</li>
 </ul>
 <div class="tabset-margin-container"></div><div class="panel-tabset column-page-right">
-<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" aria-controls="tabset-3-1" aria-selected="true" href="">Frozen + probe vs.&nbsp;full fine-tuning</a></li><li class="nav-item"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" aria-controls="tabset-3-2" aria-selected="false" href="">bag vs frozen</a></li><li class="nav-item"><a class="nav-link" id="tabset-3-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-3" aria-controls="tabset-3-3" aria-selected="false" href="">The final layer is never optimal</a></li><li class="nav-item"><a class="nav-link" id="tabset-3-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-4" aria-controls="tabset-3-4" aria-selected="false" href="">LR vs MLP is a toss-up</a></li></ul>
+<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" aria-controls="tabset-4-1" aria-selected="true" href="">The final layer is never optimal</a></li><li class="nav-item"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" aria-controls="tabset-4-2" aria-selected="false" href="">LR vs MLP is a toss-up</a></li></ul>
 <div class="tab-content">
-<div id="tabset-3-1" class="tab-pane active" aria-labelledby="tabset-3-1-tab">
-<p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/vs_paper.svg" class="img-fluid"></p>
-<p>some text</p>
-</div>
-<div id="tabset-3-2" class="tab-pane" aria-labelledby="tabset-3-2-tab">
-<p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/lr_vs_mlp.svg" class="img-fluid"></p>
-</div>
-<div id="tabset-3-3" class="tab-pane" aria-labelledby="tabset-3-3-tab">
+<div id="tabset-4-1" class="tab-pane active" aria-labelledby="tabset-4-1-tab">
 <p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/layer_profile.svg" class="img-fluid"></p>
 <div class="figure-caption">
 <p><strong>Logistic Regression dev MCC by encoder layer &amp; pooling strategy</strong>, one panel per GUE task family. Thick lines are the mean over that task’s datasets; the faint lines behind them are the individual datasets, in the same two colours. Green shading marks the two layers carried into the MLP model.</p>
@@ -131,7 +218,7 @@
 <li>At the GUE-level, epigenetic mark prediction (EMP) performance is almost flat, but this conceals strong differences on the sub-tasks. The faint lines show the spread of individual methylation markers that the task means hide: EMP’s ten datasets run from 0.28-0.79 best-layer dev MCC. It is striking that closely related biological patterns (different human methylation signals) do not give similar DNABERT-2 embeddings, and suggests that the embeddings do not capture conceptual information.</li>
 </ul>
 </div>
-<div id="tabset-3-4" class="tab-pane" aria-labelledby="tabset-3-4-tab">
+<div id="tabset-4-2" class="tab-pane" aria-labelledby="tabset-4-2-tab">
 <p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/lr_vs_mlp.svg" class="img-fluid"></p>
 <div class="figure-caption">
 <p><strong>LR vs MLP performance</strong>: A) Each point represents test MCC for one (dataset × pooling × layer) cell. Filled markers are mean pooling, open markers the [CLS] token, and shape with colour gives the task family. B) The same numbers as MLP - LR difference, per task.</p>
@@ -198,18 +285,19 @@
 <ul>
 <li>Splice site data composition: For most of the tasks in the GUE benchmark, the underlying nucleotide statistics carry the model performance. On the other hand, the acceptor and donor-labeled sequences in the splice-site prediction task are centered on highly-conserved motifs, and fine-tuning the full position-aware model provides a large benefit.</li>
 <li>Changing the pooling approach improves splice site probe models. On splice site prediction, reading frozen embeddings in eight windows instead of one mean adds <strong>+0.245 test MCC</strong>. On two control datasets with less defined motifs, the identical change has almost no effect (+0.012 and +0.020 test MCC). The gain is positional, not a side effect of the extra features. Shuffling the windows underperforms simple mean pooling (MCC = 0.411), but the best <em>single</em> window reaches a test MCC=0.613 while being no wider than mean pooling version. Unsurprisingly, the dev selected window spans bp 200–250, beginning exactly at the most conserved portion of the splice site.</li>
+<li>LoRA is simply easier and better. As shown in this UMAP visualization, DNABERT-2 fine-tuned using LoRA with a <code>BertForSequenceClassification</code> trains the encoder’s <code>[CLS]</code> token into an easily distinguishable sequence class identifier across all of the GUE Benchmarks.</li>
 </ul>
 <div class="tabset-margin-container"></div><div class="panel-tabset column-page-right">
-<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" aria-controls="tabset-4-1" aria-selected="true" href="">Splice site dataset composition</a></li><li class="nav-item"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" aria-controls="tabset-4-2" aria-selected="false" href="">Alternate pooling helps splice site probe models</a></li><li class="nav-item"><a class="nav-link" id="tabset-4-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-3" aria-controls="tabset-4-3" aria-selected="false" href="">Supplementary Table</a></li></ul>
+<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" aria-controls="tabset-5-1" aria-selected="true" href="">Splice site dataset composition</a></li><li class="nav-item"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" aria-controls="tabset-5-2" aria-selected="false" href="">Alternate pooling helps splice site probe models</a></li><li class="nav-item"><a class="nav-link" id="tabset-5-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-3" aria-controls="tabset-5-3" aria-selected="false" href="">LoRA is safer and easier</a></li></ul>
 <div class="tab-content">
-<div id="tabset-4-1" class="tab-pane active" aria-labelledby="tabset-4-1-tab">
+<div id="tabset-5-1" class="tab-pane active" aria-labelledby="tabset-5-1-tab">
 <p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/position_fig1b.svg" class="img-fluid" style="width:100.0%" alt="Top left: per-position information content for five GUE tasks, plotted against position as a fraction of sequence length. Splice shows a single narrow spike of nearly 2 bits at the middle of the sequence; the other four tasks are nearly flat below 0.5 bits. Top right: a bar chart of information-content concentration relative to the uniform expectation, with SSP at 15.5 times, PD 2.8, CPD 1.7, TF-M 1.2 and TF-H 1.1. Below, on the same horizontal scale as the profile: two sequence logo tracks for the splice dataset, acceptor and donor, each showing a narrow cluster of letters directly beneath the information spike, with a magnified callout. Acceptors end in a cAG motif at the boundary with a pyrimidine tract upstream; donors begin aGGTaAG immediately after it."></p>
 <p><strong>A) Information content</strong> is how far a position departs from random: <img src="https://latex.codecogs.com/png.latex?2%20-%20H(p)"> in bits, where <img src="https://latex.codecogs.com/png.latex?H"> is the entropy of the base frequencies at that position among sequences of one class. A position where all four bases are equally likely scores 0; one that is always the same base scores 2.</p>
 <p><strong>B) IC concentration</strong> asks how <em>localized</em> that signal is — the share of a task’s total information content in its twenty most informative positions, relative to randomly selected positions.</p>
 <p><strong>C) The two logo tracks</strong> are what those bits <em>are</em>. In this case, acceptors usually contain <code>cAG</code> at the intron/exon boundary with an upstream pyrimidine tract; donors are typically an exon|intron <code>aG|GTaAG</code>. In the GUE data, both sit at the center of a 400-bp window in each training example.</p>
 <p><strong>D) Task-specific gains above the frozen-embedding probe</strong> show the value of attention in splice-site prediciton, as the LoRA model increases MCC vs.&nbsp;the mean-pooled probe by +0.4, almost doubling performance.</p>
 </div>
-<div id="tabset-4-2" class="tab-pane" aria-labelledby="tabset-4-2-tab">
+<div id="tabset-5-2" class="tab-pane" aria-labelledby="tabset-5-2-tab">
 <p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/position_fig2.svg" class="img-fluid" style="width:100.0%" alt="Four panels. The first three plot test MCC against encoder layer for four readouts on splice, prom_300_all and tf__0. On splice the eight-window readout sits far above mean pooling at every layer, the shuffled control falls below mean pooling, and all curves peak around layer 5. On the two control datasets all readouts overlap. The fourth panel plots the gain over mean pooling against positional concentration, showing a large gain only for splice."></p>
 <p>I tested alternatives to mean-pooling to confirm that this was the cause of poor splice-site prediction in the probe arm. I replaced mean-pooling over all nucleotide positions with averaging token embeddings over 8 non-overlapping sequence windows. I evaluated probes trained on three variants:</p>
 <ul>
@@ -217,144 +305,19 @@
 <li><strong>All 8 windows</strong>: Concatenate each window-mean into a 6,144 length vector (8 segments x 768 dims).</li>
 <li><strong>Shuffled</strong>: Same-length as “All 8 windows” but the order of blocks is shuffled. Used as a length-matched, positionally-blind control because “All windows” has 8X more features than “Best single window”</li>
 </ul>
+<p><strong>Do these changes substitute for fine-tuning?</strong></p>
+<p>No — the LoRA model outperforms all of the probe models, regardless of pooler. LoRA at 0.75% of the weights, reading position 0 through an adapted encoder rather than a chosen part of a frozen one, reaches <strong>0.860</strong> on splice: +0.154 over the best frozen window (above) readout and +0.396 over mean pooling. Reading a frozen model in the right place with the right approach only helps recovers a portion of what mean pooling discards. This is yet another reason to never bother with probe models. They may work, but seemingly small choices can lead to wildly different loss depending on the task.</p>
 </div>
-<div id="tabset-4-3" class="tab-pane" aria-labelledby="tabset-4-3-tab">
-<table>
-<thead>
-<tr>
-<th rowspan="2" style="text-align: left; border-bottom: 2px solid #333; padding: 8px;">
-dataset
-</th>
-<th rowspan="2" style="text-align: center; border-bottom: 2px solid #333; border-right: 2px solid #333; padding: 8px;">
-× uniform
-</th>
-<th colspan="6" style="text-align: center; border-bottom: 1px solid #ccc; border-left: 2px solid #333; border-right: 2px solid #333; padding: 8px; font-weight: bold;">
-Probe Models
-</th>
-<th rowspan="2" style="text-align: center; border-bottom: 2px solid #333; border-left: 2px solid #333; padding: 8px;">
-LoRA
-</th>
-</tr>
-<tr>
-<th style="text-align: center; border-bottom: 2px solid #333; border-left: 2px solid #333; padding: 8px;">
-k-mer floor
-</th>
-<th style="text-align: center; border-bottom: 2px solid #333; padding: 8px;">
-<code>[CLS]</code>
-</th>
-<th style="text-align: center; border-bottom: 2px solid #333; padding: 8px;">
-mean
-</th>
-<th style="text-align: center; border-bottom: 2px solid #333; padding: 8px;">
-best single window
-</th>
-<th style="text-align: center; border-bottom: 2px solid #333; padding: 8px;">
-all 8 windows
-</th>
-<th style="text-align: center; border-bottom: 2px solid #333; border-right: 2px solid #333; padding: 8px;">
-shuffled
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left; padding: 8px;">
-<strong>SSP</strong> splice
-</td>
-<td style="text-align: center; border-right: 2px solid #333; padding: 8px;">
-15.5×
-</td>
-<td style="text-align: center; border-left: 2px solid #333; padding: 8px;">
-0.363
-</td>
-<td style="text-align: center; padding: 8px;">
-0.394
-</td>
-<td style="text-align: center; padding: 8px;">
-0.464
-</td>
-<td style="text-align: center; padding: 8px;">
-<strong>0.613</strong>
-</td>
-<td style="text-align: center; padding: 8px;">
-<strong>0.709</strong>
-</td>
-<td style="text-align: center; border-right: 2px solid #333; padding: 8px;">
-0.411
-</td>
-<td style="text-align: center; border-left: 2px solid #333; padding: 8px;">
-<strong>0.863</strong>
-</td>
-</tr>
-<tr>
-<td style="text-align: left; padding: 8px;">
-PD <code>prom_300_all</code>
-</td>
-<td style="text-align: center; border-right: 2px solid #333; padding: 8px;">
-2.8×
-</td>
-<td style="text-align: center; border-left: 2px solid #333; padding: 8px;">
-0.770
-</td>
-<td style="text-align: center; padding: 8px;">
-0.799
-</td>
-<td style="text-align: center; padding: 8px;">
-0.826
-</td>
-<td style="text-align: center; padding: 8px;">
-0.804
-</td>
-<td style="text-align: center; padding: 8px;">
-0.837
-</td>
-<td style="text-align: center; border-right: 2px solid #333; padding: 8px;">
-0.806
-</td>
-<td style="text-align: center; border-left: 2px solid #333; padding: 8px;">
-0.873
-</td>
-</tr>
-<tr>
-<td style="text-align: left; padding: 8px;">
-TF-H <code>tf__0</code>
-</td>
-<td style="text-align: center; border-right: 2px solid #333; padding: 8px;">
-1.1×
-</td>
-<td style="text-align: center; border-left: 2px solid #333; padding: 8px;">
-0.623
-</td>
-<td style="text-align: center; padding: 8px;">
-0.660
-</td>
-<td style="text-align: center; padding: 8px;">
-0.636
-</td>
-<td style="text-align: center; padding: 8px;">
-0.583
-</td>
-<td style="text-align: center; padding: 8px;">
-0.656
-</td>
-<td style="text-align: center; border-right: 2px solid #333; padding: 8px;">
-0.647
-</td>
-<td style="text-align: center; border-left: 2px solid #333; padding: 8px;">
-0.673
-</td>
-</tr>
-</tbody>
-</table>
-<p>Same data as previous tab.</p>
+<div id="tabset-5-3" class="tab-pane" aria-labelledby="tabset-5-3-tab">
+<p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/lora_cls_umap.svg" class="img-fluid" style="width:100.0%"></p>
+<p><strong>Fine-tuning trains each sequence’s first token (<code>[CLS]</code>).</strong> Each cell in the top row is a UMAP representation of the same held-out test sequences for promoter detection. The bottom shows the same for splice-site prediction. Columns 1–3 are label-free embeddings colored by class identity: 6-mer frequencies, and frozen DNABERT-2 embeddings read at each task’s dev-selected layer using mean or [CLS] pooling. Column 4 is [CLS] of the same encoder after attention-only LoRA (r = 8, seed 42, 887k of 118M parameters trainable). MCC is a linear probe for the label-free columns and the fine-tuned head for column 4.</p>
+<ul>
+<li>The eight fits are independent, so orientation, scale and inter-cluster distance are not comparable across panels. The key takeaway is that fine-tuning re-organizes information embedded in DNABERT-2’s massive parameter space into a single token without averaging across the entire sequence, allowing it to leverage attention and any of the useful patterns it learned during pre-training.</li>
+</ul>
 </div>
 </div>
 </div>
-<section id="do-these-changes-substitute-for-fine-tuning" class="level4">
-<h4 class="anchored" data-anchor-id="do-these-changes-substitute-for-fine-tuning">Do these changes substitute for fine-tuning?</h4>
-<p>No — the LoRA model outperforms all of the probe models, regardless of pooler. LoRA at 0.75% of the weights, reading position 0 through an adapted encoder rather than a chosen part of a frozen one, reaches <strong>0.863</strong> on splice: +0.154 over the best frozen windowed readout and +0.399 over mean pooling. Reading a frozen model in the right place with the right approach only helps recovers a portion of what mean pooling discards. This is yet another reason to never bother with probe models. They may work, but seemingly small choices can lead to wildly different loss depending on the task.</p>
 <p>None of this makes DNABERT-2 the right tool for splice site prediction. Here, the transformer only beat a k-mer bag on positional tasks when fine-tuned for that purpose specifically. Well-established CNNs like SpliceAI <span class="citation" data-cites="jaganathan2019spliceai">(Jaganathan et al. 2019)</span> and Pangolin <span class="citation" data-cites="zeng2022pangolin">(Zeng and Li 2022)</span> capture the same information using convolutional neural networks over longer context windows (~10kb by default), run faster and require no fine-tuning by the user. If you need to fine-tune on a particular condition (tissue, species, etc.) OpenSpliceAI <span class="citation" data-cites="chao2025openspliceai">(Chao et al. 2025)</span> is an open-source PyTorch reimplementation built specifically to allow retraining and custom training data. A 2026 benchmark <span class="citation" data-cites="bellidomolias2026benchmark">(Bellido Molias and Kudla 2026)</span> found SpliceTransformer <span class="citation" data-cites="you2024splicetransformer">(You et al. 2024)</span> to be the most accurate on synthetic gene variants, which are relevant but out-of-distribution for many models. AlphaGenome <span class="citation" data-cites="avsec2026alphagenome">(Avsec et al. 2026)</span> claimed state of the art performance but only for pirates and academics, as it is not available for commercial use.</p>
-</section>
 </section>
 </section>
 <section id="methods" class="level2 page-columns page-full">
@@ -366,18 +329,18 @@ TF-H <code>tf__0</code>
 </section>
 <section id="model-variants" class="level3">
 <h3 class="anchored" data-anchor-id="model-variants">Model variants</h3>
-<p>In their paper, the authors pre-trained DNABERT-2 using an MLM objective with 15% masking applied to sequences derived from 135 genomes, and then fully fine-tuned the resulting 117M-parameter model for each GUE dataset. I evaluated three alternative modeling approaches, each sketched in the tabset at the top of this post: a bag-of-tokens baseline that never runs the encoder, frozen embeddings read by a linear or non-linear probe, and LoRA fine-tuning. The rest of this section gives the details behind those three diagrams.</p>
+<p>In their paper, the authors pre-trained DNABERT-2 using an MLM objective with 15% masking applied to sequences derived from 135 genomes, and then fully fine-tuned the resulting 117M-parameter model for each GUE dataset. I evaluated three alternative modeling approaches, each diagramed at the top of this post: a bag-of-tokens baseline that never runs the encoder, frozen embeddings read by a linear or non-linear probe, and LoRA fine-tuning. The rest of this section gives the details behind those three diagrams.</p>
 </section>
 <section id="probe-models" class="level3 page-columns page-full">
 <h3 class="anchored" data-anchor-id="probe-models">Probe models</h3>
 <p>GUE datasets were embedded with a frozen DNABERT-2 model and all intermediate layer embeddings were cached using two pooling approaches: mean values for each embedding dimension averaged over all sequence positions, and the built-in <code>[CLS]</code> token. For the linear probe, <code>StandardScaler</code> → <code>LogisticRegression</code> pipelines were constructed in scikit-learn with the scaler fit on train only. A hyperparameter grid search was performed over <code>C ∈ logspace(-5, 3, 9)</code> × <code>class_weight ∈ {None, "balanced"}</code> for each dataset, pooling approach {mean, CLS}, and intermediate layer. C is the inverse of the regularization penalty λ, so higher C allows larger model coefficients at the risk of overfitting. To save compute time in the MLP arm, for each task I chose the final layer and the top 2 layers ranked by mean dev MCC, averaged over that task’s datasets <strong>and over both poolings</strong>.</p>
 <p>Multilayer perceptron (MLP) models were constructed in PyTorch using a single 256-dimension hidden layer (Linear → ReLU → Dropout) followed by a linear binary classification layer, with dropout 0.1, AdamW at lr 1e-3 and weight decay 0.01, batch size 32, trained for up to 200 epochs with patience 10, repeated with three seeds. They trained on exactly the same cached features the linear probe consumed, so this comparison isolates the head.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset column-page-right">
-<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" aria-controls="tabset-5-1" aria-selected="true" href="">LogisticRegression Grid</a></li><li class="nav-item"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" aria-controls="tabset-5-2" aria-selected="false" href="">MLP Model and Training</a></li><li class="nav-item"><a class="nav-link" id="tabset-5-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-3" aria-controls="tabset-5-3" aria-selected="false" href="">MLP Runner</a></li></ul>
+<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-6-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-1" aria-controls="tabset-6-1" aria-selected="true" href="">LogisticRegression Grid</a></li><li class="nav-item"><a class="nav-link" id="tabset-6-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-2" aria-controls="tabset-6-2" aria-selected="false" href="">MLP Model and Training</a></li><li class="nav-item"><a class="nav-link" id="tabset-6-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-3" aria-controls="tabset-6-3" aria-selected="false" href="">MLP Runner</a></li></ul>
 <div class="tab-content">
-<div id="tabset-5-1" class="tab-pane active" aria-labelledby="tabset-5-1-tab">
+<div id="tabset-6-1" class="tab-pane active" aria-labelledby="tabset-6-1-tab">
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -386,7 +349,7 @@ TF-H <code>tf__0</code>
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div id="callout-5" class="callout-5-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><span class="kw" style="color: #003B4F;
 background-color: null;
@@ -557,9 +520,9 @@ font-style: inherit;">return</span> rows</span></code></pre></div></div>
 </div>
 </div>
 </div>
-<div id="tabset-5-2" class="tab-pane" aria-labelledby="tabset-5-2-tab">
+<div id="tabset-6-2" class="tab-pane" aria-labelledby="tabset-6-2-tab">
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-6-contents" aria-controls="callout-6" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -568,7 +531,7 @@ font-style: inherit;">return</span> rows</span></code></pre></div></div>
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div id="callout-6" class="callout-6-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><span class="kw" style="color: #003B4F;
 background-color: null;
@@ -817,9 +780,9 @@ font-style: inherit;">return</span> model, best_epoch, history</span></code></pr
 </div>
 </div>
 </div>
-<div id="tabset-5-3" class="tab-pane" aria-labelledby="tabset-5-3-tab">
+<div id="tabset-6-3" class="tab-pane" aria-labelledby="tabset-6-3-tab">
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-7-contents" aria-controls="callout-7" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -828,7 +791,7 @@ font-style: inherit;">return</span> model, best_epoch, history</span></code></pr
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div id="callout-7" class="callout-7-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><span class="kw" style="color: #003B4F;
 background-color: null;
@@ -1024,11 +987,11 @@ font-style: inherit;">"patience"</span>: MLP_PATIENCE,</span>
 <p>Training used batch size 128 in bf16, the AdamW optimizer with weight decay 0.01, and a linear schedule whose warmup is <strong>6% of total steps</strong> rather than a fixed step count, due to the large spread between GUE dataset sizes. Dev was evaluated once per epoch; the best-dev state was restored and test scored once. Training was capped at 40 epochs with the stopping criterion set on dev patience — 5 epochs without improvement, matching the MLP arm’s convention rather than imposing a fixed epoch count. <strong>All 78 runs stopped early</strong>, the longest at 28 epochs of a possible 40, with a mean of 12.0 epochs run and best-dev at a mean of 7.0.</p>
 <p>Learning rate was calibrated before the full run on three datasets spanning the size range (<code>mouse__3</code>, 1,904 train rows; <code>prom__prom_core_tata</code>, 4,904; <code>EMP__H3K4me3</code>, 29,439) and then held fixed for all 26. This was done to keep the hyperparameter budget comparable to the MLP arm’s fixed protocol rather than giving the fine-tuned arm per-dataset selection the frozen arms never had. The grid searched was <code>{1e-4, 3e-4, 1e-3, 3e-3, 1e-2}</code>, and <code>1e-3</code> was selected and used for every dataset.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset column-page-right">
-<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-6-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-1" aria-controls="tabset-6-1" aria-selected="true" href="">LoRA Model</a></li><li class="nav-item"><a class="nav-link" id="tabset-6-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-2" aria-controls="tabset-6-2" aria-selected="false" href="">Training Loop</a></li><li class="nav-item"><a class="nav-link" id="tabset-6-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-3" aria-controls="tabset-6-3" aria-selected="false" href="">LoRA Runner</a></li></ul>
+<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-7-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-7-1" aria-controls="tabset-7-1" aria-selected="true" href="">LoRA Model</a></li><li class="nav-item"><a class="nav-link" id="tabset-7-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-7-2" aria-controls="tabset-7-2" aria-selected="false" href="">Training Loop</a></li><li class="nav-item"><a class="nav-link" id="tabset-7-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-7-3" aria-controls="tabset-7-3" aria-selected="false" href="">LoRA Runner</a></li></ul>
 <div class="tab-content">
-<div id="tabset-6-1" class="tab-pane active" aria-labelledby="tabset-6-1-tab">
+<div id="tabset-7-1" class="tab-pane active" aria-labelledby="tabset-7-1-tab">
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-8-contents" aria-controls="callout-8" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -1037,7 +1000,7 @@ font-style: inherit;">"patience"</span>: MLP_PATIENCE,</span>
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div id="callout-8" class="callout-8-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><span class="kw" style="color: #003B4F;
 background-color: null;
@@ -1351,9 +1314,9 @@ font-style: inherit;">"breakdown"</span>: breakdown}</span></code></pre></div></
 </div>
 </div>
 </div>
-<div id="tabset-6-2" class="tab-pane" aria-labelledby="tabset-6-2-tab">
+<div id="tabset-7-2" class="tab-pane" aria-labelledby="tabset-7-2-tab">
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-9-contents" aria-controls="callout-9" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -1362,7 +1325,7 @@ font-style: inherit;">"breakdown"</span>: breakdown}</span></code></pre></div></
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-5" class="callout-5-contents callout-collapse collapse">
+<div id="callout-9" class="callout-9-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><span class="kw" style="color: #003B4F;
 background-color: null;
@@ -1744,9 +1707,9 @@ font-style: inherit;">return</span> matthews_corrcoef(torch.cat(ys), torch.cat(p
 </div>
 </div>
 </div>
-<div id="tabset-6-3" class="tab-pane" aria-labelledby="tabset-6-3-tab">
+<div id="tabset-7-3" class="tab-pane" aria-labelledby="tabset-7-3-tab">
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-6-contents" aria-controls="callout-6" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-10-contents" aria-controls="callout-10" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -1755,7 +1718,7 @@ font-style: inherit;">return</span> matthews_corrcoef(torch.cat(ys), torch.cat(p
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-6" class="callout-6-contents callout-collapse collapse">
+<div id="callout-10" class="callout-10-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><span class="kw" style="color: #003B4F;
 background-color: null;
@@ -2216,11 +2179,17 @@ Zhou, Zhihan, Yanrong Ji, Weijian Li, Pratik Dutta, Ramana Davuluri, and Han Liu
 
 </section>
 
- ]]></description>
+
+<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p><code>output_all_encoded_layers=True</code> does nothing by default, etc.↩︎</p></li>
+</ol>
+</section></div> ]]></description>
   <category>code</category>
   <category>analysis</category>
   <guid>https://jimbogrif.github.io/posts/DNABERT2-classification/</guid>
-  <pubDate>Thu, 08 Oct 2026 07:00:00 GMT</pubDate>
+  <pubDate>Thu, 08 Oct 2026 00:00:00 GMT</pubDate>
   <media:content url="https://jimbogrif.github.io/posts/DNABERT2-classification/DNABERT.png" medium="image" type="image/png" height="168" width="144"/>
 </item>
 </channel>
