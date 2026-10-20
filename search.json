@@ -7,27 +7,6 @@
     "text": "I’m a computational biologist with eight years of industry experience in biotech R&D — building reproducible pipelines, turning complex NGS data into decisions, and collaborating with experimental and computational scientists in synthetic biology, gene therapy, and gene editing. My core strengths are high-throughput screening, metagenomics, genome assembly, single-cell RNA-seq, and variant characterization. At Amber Bio I used machine learning to optimize RNA editing constructs for stability, activity and specificity.\nI’m currently looking for my next role in Bay Area biotech or pharma. This blog is a way for me showcase my research side-projects with foundation models and pyTorch in an NDA-friendly way.\nEverything here runs on a single 4080 and public data — I build for efficiency by necessity. Give me more powerful hardware and more interesting data, and let’s see what’s possible. Reach out.\n← Check out my projects here"
   },
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Computational Biology in the Age of AI",
-    "section": "",
-    "text": "Bioinformatician / computational biologist exploring modern ML and foundation models through hands-on projects and posting what I learn here!\nAbout me →"
-  },
-  {
-    "objectID": "index.html#jim-griffin",
-    "href": "index.html#jim-griffin",
-    "title": "Computational Biology in the Age of AI",
-    "section": "",
-    "text": "Bioinformatician / computational biologist exploring modern ML and foundation models through hands-on projects and posting what I learn here!\nAbout me →"
-  },
-  {
-    "objectID": "index.html#posts",
-    "href": "index.html#posts",
-    "title": "Computational Biology in the Age of AI",
-    "section": "Posts",
-    "text": "Posts"
-  },
-  {
     "objectID": "posts/DNABERT2-classification/index.html",
     "href": "posts/DNABERT2-classification/index.html",
     "title": "Benchmarking Genomic Motif Classification with DNABERT-2 Embeddings",
@@ -75,5 +54,26 @@
     "title": "Benchmarking Genomic Motif Classification with DNABERT-2 Embeddings",
     "section": "Footnotes",
     "text": "Footnotes\n\n\noutput_all_encoded_layers=True does nothing by default, etc.↩︎"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Computational Biology in the Age of AI",
+    "section": "",
+    "text": "Bioinformatician / computational biologist exploring modern ML and foundation models through hands-on projects and posting what I learn here!\nAbout me →"
+  },
+  {
+    "objectID": "index.html#jim-griffin",
+    "href": "index.html#jim-griffin",
+    "title": "Computational Biology in the Age of AI",
+    "section": "",
+    "text": "Bioinformatician / computational biologist exploring modern ML and foundation models through hands-on projects and posting what I learn here!\nAbout me →"
+  },
+  {
+    "objectID": "index.html#posts",
+    "href": "index.html#posts",
+    "title": "Computational Biology in the Age of AI",
+    "section": "Posts",
+    "text": "Posts"
   }
 ]
