@@ -17,9 +17,36 @@ toc-title: "Contents"
 
 ## Intro
 
-In this post I'll explore DNABERT-2 [@zhou2024dnabert2], a genomic language model (gLM) published in 2024. I will highlight some claims made in their paper and subsequent benchmarking studies [@marin2024bend; @tang2025probing] about gLM classification performance, best practices, and task-specific training approaches. Then I will benchmark short-sequence motif classification performance in the [Genome Understanding Evaluation (GUE)](https://arxiv.org/abs/2306.15006) benchmark suite using a non-gLM baseline and a ladder of task-specific training approaches increasing in size and complexity. All models are compared with the full fine-tuning results published in the authors' original paper. Each tab shows one modeling approach I built:
+In this post I'll explore DNABERT-2 [@zhou2024dnabert2], a genomic language model (gLM) published in 2024. gLM authors and subsequent benchmarking studies have made conflicting claims about gLM classification performance and best practices for task-specific training [@marin2024bend; @tang2025probing]. Here, I benchmark short-sequence motif classification performance in the [Genome Understanding Evaluation (GUE)](https://arxiv.org/abs/2306.15006) benchmark suite using a non-gLM baseline and a ladder of task-specific training approaches increasing in size and complexity. 
 
-::: {.panel-tabset .column-page-right}
+In principle, **fine-tuning a gLM that has already absorbed the statistics of millions of genomic positions should give a more accurate model than one trained only on a small number of labeled examples.** I test the following hypotheses to see how well DNABERT-2 fulfills these expectations:
+
+```{=html}
+<style>
+/* Hypothesis callouts: no top/bottom margin so they stack tightly */
+.callout.hypothesis { margin-top: 0; margin-bottom: 0; }
+</style>
+```
+
+::: {.callout-note .hypothesis}
+## H1 · Pre-training learns biology, not just nucleotide statistics
+If self-supervised pre-training teaches DNABERT-2 genuine genomic structure — motifs, grammar, conservation — then its frozen embeddings should outclass features built from a baseline k-mer frequency model with no positional or contextual information. 
+
+→ *Tested in [Frozen embeddings do not beat a k-mer bag](#frozen-embeddings-do-not-beat-a-k-mer-bag).*
+:::
+
+::: {.callout-note .hypothesis}
+## H2 · Optimizing embedding layer selection improves probe model performance
+Transformers tend to autonomously develop "layer specialization". Early layers often focus on token-level statistics, and deeper layers capture more abstract properties. Probe models trained on gLMs like Nucleotide Transformer have been reported to have the same properties [@dallatorre2024nt].
+
+→ *Tested in [Layer selection affects probe performance](#sec-probe-performance).*
+:::
+
+&nbsp;
+
+[See Methods for more detail](#methods). All models were compared with the full fine-tuning results published in the authors' original paper. Each tab shows one modeling approach I built:
+
+::: {#model-tabset .panel-tabset .column-page-right}
 
 ## Baseline
 ![](assets/baseline_bag.svg){width=100% fig-alt="Schematic of the baseline arm. A GUE sequence box on the left splits into two featurization routes: k-mer counting for k in 3 to 6, giving 4^k frequencies of 64, 256, 1,024 or 4,096 dimensions; and the DNABERT-2 BPE tokenizer with its 4,096-token vocabulary, giving 4,096-dimensional token frequencies, annotated that the tokenizer alone is used and the encoder is never run. Both routes feed the same trained head, holding a logistic regression and a 2-layer MLP, the only trained weights. A footer notes that 4^6 = 4,096, so the 6-mer bag and DNABERT-2's entire vocabulary have identical cardinality, and that frequencies are L1-normalized per sequence."}
@@ -45,20 +72,19 @@ In this post I'll explore DNABERT-2 [@zhou2024dnabert2], a genomic language mode
 :::
 
 
+
+## Background:
+
 ### Genomic foundation models
 
-A genomic language model (gLM) is a transformer pre-trained on raw DNA with no functional labels, in the hope that the representations it learns transfer to many downstream tasks at once. The premise is analogous to natural language processing (NLP) and protein modeling: train once on a large unlabeled corpus, then reuse the embeddings as general-purpose features. For genomics, general-purpose embeddings are promising because experimental data is limited. When designing gene therapy or gene editing constructs, high-throughput screening is often used to compare and rank variants across diverse functional characteristics including expression, splice-site usage, or binding activity. Models that have already absorbed the statistics of millions of genomic positions should, in principle, need far fewer labeled examples to reach usable accuracy across a wide range of tasks.
+A genomic language model (gLM) is a transformer pre-trained on raw DNA with no functional labels, in the hope that the representations it learns transfer to many downstream tasks at once. The premise is analogous to natural language processing (NLP) and protein modeling: train once on a large unlabeled corpus, then reuse the embeddings as general-purpose features. For genomics, general-purpose embeddings are promising because experimental data is limited. For nucleic acid constructs, high-throughput screening (HTS) is the gold standard for optimizing diverse characteristics like expression or activity. Fine-tuning gLMs with task-specific HTS data can enable *in silico* screening, improving the efficiency of costly screening campaigns. 
 
-There are two assumptions baked into this premise.
-
-1. Self-supervised pre-training on genomes captures biologically meaningful structure — motifs, grammar, and evolutionary conservation — rather than just low-level nucleotide statistics.
-2. Sequence embeddings generalize to a broad range of tasks with minimal to no task-specific fine-tuning.
 
 ### DNABERT-2 architecture & limitations
 
-DNABERT-2 is a BERT-style encoder with 117M parameters, pre-trained on 135 genomes (~32B nucleotides) via masked language modeling [@zhou2024dnabert2]. I chose it because it is small enough to fine-tune on a consumer GPU while still scoring competitively on sequence classification benchmarks [@marin2024bend], and because both its weights and its benchmark suite ship on HuggingFace.
+DNABERT-2 is a BERT-style encoder with 117M parameters, pre-trained on 135 genomes (~32B nucleotides) via masked language modeling [@zhou2024dnabert2]. I chose it because it is small enough to fine-tune on a consumer GPU while still scoring competitively on sequence classification benchmarks [@marin2024bend], and because both its weights and its benchmark suite ship on HuggingFace. 
 
-Architecture, tokenizer, and training objective each constrain what a gLM can do — how accurate it is, how fast it trains, and whether it can generate sequences at all. Some of the choices that define DNABERT-2 are:
+Three design choices shape what DNABERT-2 can do — how it tokenizes nucleotides, generalizes to different input lengths — and why it can't be used for sequence generation:
 
 ::: {.panel-tabset}
 
@@ -90,7 +116,12 @@ Masked language modeling hides 15% of tokens and trains the model to predict the
 
 :::
 
-*That last limit is a design choice, not a law*. Evo 2 is causally trained and does both — generating sequence while reaching state-of-the-art classification on many tasks with no fine-tuning at all [@brixi2025evo2]. **Expect a follow-up post on sequence generation once I find a cost-effective way to run Evo 2!**
+*That last limit is a design choice, not a law*. Evo 2 (a causally trained model) generates sequences & achieves state-of-the-art classification on many tasks with no fine-tuning at all [@brixi2025evo2].
+
+::: {.callout-tip}
+## Follow-up coming
+Expect a post on sequence generation once I find a cost-effective way to run Evo 2.
+:::
 
 
 ### LoRA: Low-rank adaptation of large language models
@@ -107,28 +138,57 @@ In the DNABERT-2 paper, the authors compare LoRA fine-tuning on Nucleotide Trans
 ## Results
 
 ### Frozen embeddings do not beat a k-mer bag
-Across the 26 GUE datasets I evaluated, k-mer frequency and DNABERT-2 frozen embeddings performed nearly identically when coupled to a classification head. I embeded sequences with DNABERT-2's frozen public model weights and simple k-mer frequency encoding (literally the frequency of every 3-6 length combination of bases. Frozen embeddings read at the best layer with the best of two pooling approaches and the best of two heads averaged 0.5906 mean test MCC. 6-mer frequency encoding averaged 0.5898, meaning the frozen-probe approach led to a median increase in classification accuracy of +0.011 test MCC above the baseline model. The embeddings won on just 14 of 26 benchmarks. This is in-line with [@tang2025probing] and in stark contrast to the more favorable performance in [arxiv.org/abs/2608.05329], although both cases reported task-dependent performance. 
+I embedded sequences with DNABERT-2's frozen public model weights and a simple k-mer frequency encoding (literally the frequency of every 3-6 length combination of bases). 
 
-To me, this signals that the frozen weight + probe approach is not worth it. By the time you’ve set up Torch, fetched DNABERT-2 from HuggingFace, and fixed the bugs in DNABERT-2 (by default `output_all_encoded_layers=True` does nothing), you could probably have achieved similar performance with a much simpler model. Still, I found a couple of interesting things when evaluating this approach:
+- [On average, k-mer frequency- and DNABERT-2 frozen embedding-based models had nearly identical classification accuracy.](#){.tab-link data-tab="Relative model performance"} Median test MCC normalized to the fine-tuned gold standard was 82% for the k-mer based models and 85% for frozen embeddings. The embeddings won on just 15 of 27 benchmarks. 
+- [Frozen + probe vs. full fine-tuning](#){.tab-link data-tab="Absolute accuracy: frozen vs. paper"}: On average, fine-tuning DNABERT-2 provides a ~15% increase in classification accuracy above the best probe models. Relative performance was stable, excluding splice site prediction. Per task accuracy varied immensely, from 0.93 test MCC in one promoter classification dataset to 0.32 in an epigenetic marker detection dataset (*H3K4me2*). 
 
-- [Frozen + probe vs. full fine-tuning](#){.tab-link data-tab="Frozen + probe vs. full fine-tuning"}: The best dev-selected frozen embedding probes were 88.7% as accurate (median test MCC) as the published fine-tuned models in the paper’s Table 6 (range 74.6–104.9%), and exceeded the paper on 1 of 26 datasets. 
-- [The final layer is never optimal](#){.tab-link data-tab="The final layer is never optimal"}: Frozen embeddings extracted from layers 2-6 outperformed the final layer embedding in nearly all cases. 
-- [LR vs MLP is a toss-up](#){.tab-link data-tab="LR vs MLP is a toss-up"}. Replacing logistic regression with a nonlinear MLP made essentially no difference on best-case frozen embedding model performance. For k-mer models, the feature space is k^4. As k-mer and feature-space size decrease, the MLP - LR gap widens. 
+Initially I expected the gap between k-mer frequency and frozen weights to be much larger. Even outside the realm of gLMs, this is a relatively naive sequence representation and I was not expecting this to perform as well as it did. One issue I realized later (and address further on) is that the mean pooling approach I used is suboptimal for several tasks. By averaging each dimension across all nucleotide positions, a lot of the positional information is lost. 
 
+::: {.callout-tip}
+## **TLDR:** Probing frozen weights is not worth it 
+- If you understand when mean pooling over token length is a bad idea, just fine-tune the model. 
+- If not, by the time you’ve set up Torch and fixed the bugs in DNABERT-2[^1] you could be have achieved similar performance with a simpler model in scikit-learn that you actually understand. 
 
+[^1]: `output_all_encoded_layers=True` does nothing by default, etc.
 
-
+:::
 
 
 ::: {.panel-tabset .column-page-right}
 
-## Frozen + probe vs. full fine-tuning
+## Relative model performance
+![](assets/four_arms_norm.svg)
+
+::: {.figure-caption}
+**Test MCC normalized to DNABERT-2 fine-tuned to each task in original paper.** Each group shows the best dev-selected test MCC for 3 model variants. *Light*: baseline k-mer frequency + Probe (Logistic Regression or MLP), *Medium*: frozen DNABERT-2 embedding + Probe, or *Dark*: LoRA fine-tuned model. Points are normalized values for individual datasets in that GUE benchmark.
+:::
+
+- Frozen embeddings read at the best layer with the best of two pooling approaches and the best of two heads averaged 0.5906 mean test MCC. 6-mer frequency encoding averaged 0.5898, meaning *the frozen-probe approach led to a median increase in classification accuracy of just +0.011 test MCC above the deliberately simple baseline model*.
+
+- **Establishing a baseline is important when comparing modeling approaches.** The DNABERT-2 paper does not include any non-gLM based comparison so its hard to establish task difficulty or put model performance in context, except against other gLMs. The relative strength of the k-mer baseline, a model with no positional awareness or information beyond nucleotide statistics, highlights the overall weakness of DNABERT-2 and its extracted embeddings for general sequence classification problems.
+
+- This is in-line with [@tang2025probing] and in stark contrast to the more favorable performance in [arxiv.org/abs/2608.05329], although both cases reported task-dependent performance. 
+
+
+## Absolute accuracy: frozen vs. paper 
 ![](assets/vs_paper.svg)
 
-some text
+::: {.figure-caption}
+**Best frozen weight-based model compared with the paper's fully fine-tuned model score.** Open circles are the fine-tuned model test MCC scores reported in Table 6 of the paper, closed circles are test MCC from the best dev selected model across all layer x head combinations.
+:::
+- The best dev-selected frozen embedding probes were 88.7% as accurate (median test MCC, excluding splice site prediction) as the published fine-tuned models in the paper’s Table 6 (range 74.6–104.9%), and exceeded the paper on 1 of 26 datasets. 
+- In the next section, I'll discuss why the original pooler I used is inappropriate for splice site prediction and show how to fix it.
 
-## bag vs frozen
-![](assets/lr_vs_mlp.svg)
+:::
+
+
+### Layer selection affects probe performance, LR vs. MLP does not {#sec-probe-performance}
+
+- [The final layer is never optimal](#){.tab-link data-tab="The final layer is never optimal"}: Frozen embeddings extracted from layers 2-6 outperformed the final layer embedding in nearly all cases. 
+- [LR vs MLP is a toss-up](#){.tab-link data-tab="LR vs MLP is a toss-up"}. Replacing logistic regression with a nonlinear MLP made essentially no difference on best-case frozen embedding model performance. For k-mer models, the feature space is k^4. As k-mer and feature-space size decrease, the MLP - LR gap widens. 
+
+::: {.panel-tabset .column-page-right}
 
 ## The final layer is never optimal
 ![](assets/layer_profile.svg)
@@ -173,6 +233,8 @@ Every frozen probe model in this study destroys position. Mean pooling averages 
 
 - [Splice site data composition](#){.tab-link data-tab="Splice site dataset composition"}: For most of the tasks in the GUE benchmark, the underlying nucleotide statistics carry the model performance. On the other hand, the acceptor and donor-labeled sequences in the splice-site prediction task are centered on highly-conserved motifs, and fine-tuning the full position-aware model provides a large benefit.
 - [Changing the pooling approach improves splice site probe models](#){.tab-link data-tab="Alternate pooling helps splice site probe models"}. On splice site prediction, reading frozen embeddings in eight windows instead of one mean adds **+0.245 test MCC**. On two control datasets with less defined motifs, the identical change has almost no effect (+0.012 and +0.020 test MCC). The gain is positional, not a side effect of the extra features. Shuffling the windows underperforms simple mean pooling (MCC = 0.411), but the best *single* window reaches a test MCC=0.613 while being no wider than mean pooling version. Unsurprisingly, the dev selected window spans bp 200–250, beginning exactly at the most conserved portion of the splice site.
+- [LoRA is simply easier and better](#){.tab-link data-tab="LoRA is safer and easier"}. As shown in this UMAP visualization, DNABERT-2 fine-tuned using LoRA with a `BertForSequenceClassification` trains the encoder's `[CLS]` token into an easily distinguishable sequence class identifier across all of the GUE Benchmarks. 
+
 
 ::: {.panel-tabset .column-page-right}
 
@@ -198,72 +260,18 @@ I tested alternatives to mean-pooling to confirm that this was the cause of poor
 - **All 8 windows**: Concatenate each window-mean into a 6,144 length vector (8 segments x 768 dims).
 - **Shuffled**: Same-length as "All 8 windows" but the order of blocks is shuffled. Used as a length-matched, positionally-blind control because "All windows" has 8X more features than "Best single window"
 
+**Do these changes substitute for fine-tuning?**
 
+No — the LoRA model outperforms all of the probe models, regardless of pooler. LoRA at 0.75% of the weights, reading position 0 through an adapted encoder rather than a chosen part of a frozen one, reaches **0.860** on splice: +0.154 over the best frozen window (above) readout and +0.396 over mean pooling. Reading a frozen model in the right place with the right approach only helps recovers a portion of what mean pooling discards. This is yet another reason to never bother with probe models. They may work, but seemingly small choices can lead to wildly different loss depending on the task.
 
-## Supplementary Table
+## LoRA is safer and easier
+![](assets/lora_cls_umap.svg){width=100%}
 
-<table>
-  <thead>
-    <tr>
-      <th rowspan="2" style="text-align: left; border-bottom: 2px solid #333; padding: 8px;">dataset</th>
-      <th rowspan="2" style="text-align: center; border-bottom: 2px solid #333; border-right: 2px solid #333; padding: 8px;">× uniform</th>
-      <th colspan="6" style="text-align: center; border-bottom: 1px solid #ccc; border-left: 2px solid #333; border-right: 2px solid #333; padding: 8px; font-weight: bold;">Probe Models</th>
-      <th rowspan="2" style="text-align: center; border-bottom: 2px solid #333; border-left: 2px solid #333; padding: 8px;">LoRA</th>
-    </tr>
-    <tr>
-      <th style="text-align: center; border-bottom: 2px solid #333; border-left: 2px solid #333; padding: 8px;">k-mer floor</th>
-      <th style="text-align: center; border-bottom: 2px solid #333; padding: 8px;"><code>[CLS]</code></th>
-      <th style="text-align: center; border-bottom: 2px solid #333; padding: 8px;">mean</th>
-      <th style="text-align: center; border-bottom: 2px solid #333; padding: 8px;">best single window</th>
-      <th style="text-align: center; border-bottom: 2px solid #333; padding: 8px;">all 8 windows</th>
-      <th style="text-align: center; border-bottom: 2px solid #333; border-right: 2px solid #333; padding: 8px;">shuffled</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="text-align: left; padding: 8px;"><strong>SSP</strong> splice</td>
-      <td style="text-align: center; border-right: 2px solid #333; padding: 8px;">15.5×</td>
-      <td style="text-align: center; border-left: 2px solid #333; padding: 8px;">0.363</td>
-      <td style="text-align: center; padding: 8px;">0.394</td>
-      <td style="text-align: center; padding: 8px;">0.464</td>
-      <td style="text-align: center; padding: 8px;"><strong>0.613</strong></td>
-      <td style="text-align: center; padding: 8px;"><strong>0.709</strong></td>
-      <td style="text-align: center; border-right: 2px solid #333; padding: 8px;">0.411</td>
-      <td style="text-align: center; border-left: 2px solid #333; padding: 8px;"><strong>0.863</strong></td>
-    </tr>
-    <tr>
-      <td style="text-align: left; padding: 8px;">PD <code>prom_300_all</code></td>
-      <td style="text-align: center; border-right: 2px solid #333; padding: 8px;">2.8×</td>
-      <td style="text-align: center; border-left: 2px solid #333; padding: 8px;">0.770</td>
-      <td style="text-align: center; padding: 8px;">0.799</td>
-      <td style="text-align: center; padding: 8px;">0.826</td>
-      <td style="text-align: center; padding: 8px;">0.804</td>
-      <td style="text-align: center; padding: 8px;">0.837</td>
-      <td style="text-align: center; border-right: 2px solid #333; padding: 8px;">0.806</td>
-      <td style="text-align: center; border-left: 2px solid #333; padding: 8px;">0.873</td>
-    </tr>
-    <tr>
-      <td style="text-align: left; padding: 8px;">TF-H <code>tf__0</code></td>
-      <td style="text-align: center; border-right: 2px solid #333; padding: 8px;">1.1×</td>
-      <td style="text-align: center; border-left: 2px solid #333; padding: 8px;">0.623</td>
-      <td style="text-align: center; padding: 8px;">0.660</td>
-      <td style="text-align: center; padding: 8px;">0.636</td>
-      <td style="text-align: center; padding: 8px;">0.583</td>
-      <td style="text-align: center; padding: 8px;">0.656</td>
-      <td style="text-align: center; border-right: 2px solid #333; padding: 8px;">0.647</td>
-      <td style="text-align: center; border-left: 2px solid #333; padding: 8px;">0.673</td>
-    </tr>
-  </tbody>
-</table>
+**Fine-tuning trains each sequence's first token (`[CLS]`).** Each cell in the top row is a UMAP representation of the same held-out test sequences for promoter detection. The bottom shows the same for splice-site prediction. Columns 1–3 are label-free embeddings colored by class identity: 6-mer frequencies, and frozen DNABERT-2 embeddings read at each task's dev-selected layer using mean or [CLS] pooling. Column 4 is [CLS] of the same encoder after attention-only LoRA (r = 8, seed 42, 887k of 118M parameters trainable). MCC is a linear probe for the label-free columns and the fine-tuned head for column 4. 
 
-Same data as previous tab.
+- The eight fits are independent, so orientation, scale and inter-cluster distance are not comparable across panels. The key takeaway is that fine-tuning re-organizes information embedded in DNABERT-2's massive parameter space into a single token without averaging across the entire sequence, allowing it to leverage attention and any of the useful patterns it learned during pre-training.
 
 :::
-
-
-#### Do these changes substitute for fine-tuning?
-
-No — the LoRA model outperforms all of the probe models, regardless of pooler. LoRA at 0.75% of the weights, reading position 0 through an adapted encoder rather than a chosen part of a frozen one, reaches **0.863** on splice: +0.154 over the best frozen windowed readout and +0.399 over mean pooling. Reading a frozen model in the right place with the right approach only helps recovers a portion of what mean pooling discards. This is yet another reason to never bother with probe models. They may work, but seemingly small choices can lead to wildly different loss depending on the task.
 
 None of this makes DNABERT-2 the right tool for splice site prediction. Here, the transformer only beat a k-mer bag on positional tasks when fine-tuned for that purpose specifically. Well-established CNNs like SpliceAI [@jaganathan2019spliceai] and Pangolin [@zeng2022pangolin] capture the same information using convolutional neural networks over longer context windows (~10kb by default), run faster and require no fine-tuning by the user. If you need to fine-tune on a particular condition (tissue, species, etc.) OpenSpliceAI [@chao2025openspliceai] is an open-source PyTorch reimplementation built specifically to allow retraining and custom training data. A 2026 benchmark [@bellidomolias2026benchmark] found SpliceTransformer [@you2024splicetransformer] to be the most accurate on synthetic gene variants, which are relevant but out-of-distribution for many models. AlphaGenome [@avsec2026alphagenome] claimed state of the art performance but only for pirates and academics, as it is not available for commercial use.
 
@@ -278,10 +286,7 @@ The remaining 26 benchmarks are binary and two-column (`sequence`, `label`), wit
 
 ### Model variants
 
-In their paper, the authors pre-trained DNABERT-2 using an MLM objective with 15% masking applied to sequences derived from 135 genomes, and then fully fine-tuned the resulting 117M-parameter model for each GUE dataset. I evaluated three alternative modeling approaches, each
-sketched in the [tabset at the top of this post](#intro): a bag-of-tokens baseline that
-never runs the encoder, frozen embeddings read by a linear or non-linear probe, and LoRA
-fine-tuning. The rest of this section gives the details behind those three diagrams.
+In their paper, the authors pre-trained DNABERT-2 using an MLM objective with 15% masking applied to sequences derived from 135 genomes, and then fully fine-tuned the resulting 117M-parameter model for each GUE dataset. I evaluated three alternative modeling approaches, each diagramed [at the top of this post](#model-tabset): a bag-of-tokens baseline that never runs the encoder, frozen embeddings read by a linear or non-linear probe, and LoRA fine-tuning. The rest of this section gives the details behind those three diagrams.
 
 ### Probe models
 
