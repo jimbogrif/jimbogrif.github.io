@@ -10,7 +10,7 @@
 <atom:link href="https://jimbogrif.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Jim&#39;s blog about bioinformatics, machine learning, and AI in biology</description>
 <generator>quarto-1.10.19</generator>
-<lastBuildDate>Thu, 08 Oct 2026 07:00:00 GMT</lastBuildDate>
+<lastBuildDate>Thu, 08 Oct 2026 00:00:00 GMT</lastBuildDate>
 <item>
   <title>Benchmarking Genomic Motif Classification with DNABERT-2 Embeddings</title>
   <dc:creator>Jim Griffin</dc:creator>
@@ -285,10 +285,10 @@
 <ul>
 <li>Splice site data composition: For most of the tasks in the GUE benchmark, the underlying nucleotide statistics carry the model performance. On the other hand, the acceptor and donor-labeled sequences in the splice-site prediction task are centered on highly-conserved motifs, and fine-tuning the full position-aware model provides a large benefit.</li>
 <li>Changing the pooling approach improves splice site probe models. On splice site prediction, reading frozen embeddings in eight windows instead of one mean adds <strong>+0.245 test MCC</strong>. On two control datasets with less defined motifs, the identical change has almost no effect (+0.012 and +0.020 test MCC). The gain is positional, not a side effect of the extra features. Shuffling the windows underperforms simple mean pooling (MCC = 0.411), but the best <em>single</em> window reaches a test MCC=0.613 while being no wider than mean pooling version. Unsurprisingly, the dev selected window spans bp 200–250, beginning exactly at the most conserved portion of the splice site.</li>
-<li>LoRA is simply easier and better. As shown in this UMAP visualization, DNABERT-2 fine-tuned using LoRA with a <code>BertForSequenceClassification</code> trains the encoder’s <code>[CLS]</code> token into an easily distinguishable sequence class identifier across all of the GUE Benchmarks.</li>
+<li>Or you could just fine-tune. As shown in this UMAP visualization, DNABERT-2 fine-tuned using LoRA with a <code>BertForSequenceClassification</code> trains the encoder’s <code>[CLS]</code> token into an easily distinguishable sequence class identifier across all of the GUE Benchmarks.</li>
 </ul>
 <div class="tabset-margin-container"></div><div class="panel-tabset column-page-right">
-<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" aria-controls="tabset-5-1" aria-selected="true" href="">Splice site dataset composition</a></li><li class="nav-item"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" aria-controls="tabset-5-2" aria-selected="false" href="">Alternate pooling helps splice site probe models</a></li><li class="nav-item"><a class="nav-link" id="tabset-5-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-3" aria-controls="tabset-5-3" aria-selected="false" href="">LoRA is safer and easier</a></li></ul>
+<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" aria-controls="tabset-5-1" aria-selected="true" href="">Splice site dataset composition</a></li><li class="nav-item"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" aria-controls="tabset-5-2" aria-selected="false" href="">Alternate pooling helps splice site probe models</a></li><li class="nav-item"><a class="nav-link" id="tabset-5-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-3" aria-controls="tabset-5-3" aria-selected="false" href="">Or just fine-tune</a></li></ul>
 <div class="tab-content">
 <div id="tabset-5-1" class="tab-pane active" aria-labelledby="tabset-5-1-tab">
 <p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/position_fig1b.svg" class="img-fluid" style="width:100.0%" alt="Top left: per-position information content for five GUE tasks, plotted against position as a fraction of sequence length. Splice shows a single narrow spike of nearly 2 bits at the middle of the sequence; the other four tasks are nearly flat below 0.5 bits. Top right: a bar chart of information-content concentration relative to the uniform expectation, with SSP at 15.5 times, PD 2.8, CPD 1.7, TF-M 1.2 and TF-H 1.1. Below, on the same horizontal scale as the profile: two sequence logo tracks for the splice dataset, acceptor and donor, each showing a narrow cluster of letters directly beneath the information spike, with a magnified callout. Acceptors end in a cAG motif at the boundary with a pyrimidine tract upstream; donors begin aGGTaAG immediately after it."></p>
@@ -312,7 +312,8 @@
 <p><img src="https://jimbogrif.github.io/posts/DNABERT2-classification/assets/lora_cls_umap.svg" class="img-fluid" style="width:100.0%"></p>
 <p><strong>Fine-tuning trains each sequence’s first token (<code>[CLS]</code>).</strong> Each cell in the top row is a UMAP representation of the same held-out test sequences for promoter detection. The bottom shows the same for splice-site prediction. Columns 1–3 are label-free embeddings colored by class identity: 6-mer frequencies, and frozen DNABERT-2 embeddings read at each task’s dev-selected layer using mean or [CLS] pooling. Column 4 is [CLS] of the same encoder after attention-only LoRA (r = 8, seed 42, 887k of 118M parameters trainable). MCC is a linear probe for the label-free columns and the fine-tuned head for column 4.</p>
 <ul>
-<li>The eight fits are independent, so orientation, scale and inter-cluster distance are not comparable across panels. The key takeaway is that fine-tuning re-organizes information embedded in DNABERT-2’s massive parameter space into a single token without averaging across the entire sequence, allowing it to leverage attention and any of the useful patterns it learned during pre-training.</li>
+<li>The eight fits are independent, so orientation, scale and inter-cluster distance are not comparable across panels.</li>
+<li>The key takeaway is that fine-tuning re-organizes information embedded in DNABERT-2 into a single token without averaging across the entire sequence, allowing it to learn task-specific postional information alongside any of the useful patterns it learned during pre-training.</li>
 </ul>
 </div>
 </div>
@@ -2189,7 +2190,7 @@ Zhou, Zhihan, Yanrong Ji, Weijian Li, Pratik Dutta, Ramana Davuluri, and Han Liu
   <category>code</category>
   <category>analysis</category>
   <guid>https://jimbogrif.github.io/posts/DNABERT2-classification/</guid>
-  <pubDate>Thu, 08 Oct 2026 07:00:00 GMT</pubDate>
+  <pubDate>Thu, 08 Oct 2026 00:00:00 GMT</pubDate>
   <media:content url="https://jimbogrif.github.io/posts/DNABERT2-classification/DNABERT.png" medium="image" type="image/png" height="168" width="144"/>
 </item>
 </channel>
